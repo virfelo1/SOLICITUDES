@@ -1,23 +1,21 @@
 package co.com.projectve.model.infouser;
-import lombok.Builder;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-//import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 
 @Getter
 @Setter
-//@NoArgsConstructor
+@NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class InfoUser {
-    private String id;
+    private BigInteger id;
     private String documentType;
-    private String documentNumber;
+    private Long documentNumber;
     private BigDecimal creditAmount;
-    private String creditTime;
+    private Integer creditTime;
     private String typeCredit;
     private String creditStatus;
 }
