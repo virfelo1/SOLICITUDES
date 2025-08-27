@@ -41,6 +41,7 @@ subprojects {
         testCompileOnly  "org.projectlombok:lombok:${lombokVersion}"
         testAnnotationProcessor  "org.projectlombok:lombok:${lombokVersion}"
         implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
+        compileOnly "org.springdoc:springdoc-openapi-starter-webflux-ui:${rootProject.ext.swaggerVersion}"
     }
 
     tasks.withType(Test).configureEach {
