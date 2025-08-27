@@ -21,7 +21,7 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
         BigInteger,
         MyReactiveRepository
         >
-    implements InfoUserRepository{
+        implements InfoUserRepository{
     private final TransactionalOperator transactionalOperator;
     private static final Logger logger = LoggerFactory.getLogger(MyReactiveRepositoryAdapter.class);
 
@@ -32,11 +32,15 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
 
     @Override
     public Mono<InfoUser> saveRequest(InfoUser infoUser) {
-        return super.save(infoUser);
-              //  .as(transactionalOperator::transactional); // atomicidad
+        logger.trace("Iniciando solicitud de guardado para: {}", infoUser); // Log the start of the process
+        return super.save(infoUser)
+                .doOnSuccess(savedInfoUser -> logger.info("InfoUser guardado exitosamente con ID: {}", savedInfoUser.getId())) // Log on successful save
+                .doOnError(error -> logger.error("No se pudo guardar InfoUser debido a: {}", error.getMessage(), error)) // Log errors
+                .doFinally(signalType -> logger.trace("Solicitud de guardado completada: {}", signalType)); // Log when the process is finished
     }
+
     @PostConstruct
     public void testLog() {
-    logger.info("Log4j2 está funcionando correctamente en consola");
-}
+        logger.info("Log4j2 Funcionan correctamente en consola");
+    }
 }
