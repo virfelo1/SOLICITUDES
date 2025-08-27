@@ -24,9 +24,9 @@ public class Handler {
 
     public Mono<ServerResponse> saveRequestApi(ServerRequest request) {
         return request.bodyToMono(SaveRequestDTO.class)
-                .map(infoUserDTOMapper::toModel) // Use the mapper to convert DTO to Model
+                .map(infoUserDTOMapper::toModel)
                 .flatMap(infoUserUseCase::execute)
-                .flatMap(user -> ServerResponse.ok().bodyValue(user))
-                .onErrorResume(e -> ServerResponse.badRequest().bodyValue(Map.of("error", e.getMessage())));
+                .flatMap(user -> ServerResponse.ok().bodyValue(user));
+                //.onErrorResume(e -> ServerResponse.badRequest().bodyValue(Map.of("error", e.getMessage())));
     }
 }

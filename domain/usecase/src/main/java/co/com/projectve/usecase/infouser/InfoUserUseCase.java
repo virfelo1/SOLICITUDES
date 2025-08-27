@@ -2,6 +2,7 @@ package co.com.projectve.usecase.infouser;
 
 import co.com.projectve.model.infouser.InfoUser;
 import co.com.projectve.model.infouser.gateways.InfoUserRepository;
+import co.com.projectve.usecase.infouser.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import reactor.core.publisher.Mono;
 
@@ -25,16 +26,16 @@ public class InfoUserUseCase {
     private Mono<InfoUser> validateInfoUser(InfoUser infoUser) {
         return Mono.just(infoUser)
                 .filter(iu -> iu.getDocumentType() != null && !iu.getDocumentType().isBlank())
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("El tipo de documento es obligatorio.")))
+                .switchIfEmpty(Mono.error(new BusinessException("El tipo de documento es obligatorio.")))
                 .filter(iu -> iu.getDocumentNumber() != null)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("El número de documento es obligatorio.")))
+                .switchIfEmpty(Mono.error(new BusinessException("El número de documento es obligatorio.")))
                 .filter(iu -> iu.getCreditAmount() != null)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("El monto del crédito es obligatorio.")))
+                .switchIfEmpty(Mono.error(new BusinessException("El monto del crédito es obligatorio.")))
                 .filter(iu -> iu.getCreditTime() != null)
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("El plazo del crédito es obligatorio.")))
+                .switchIfEmpty(Mono.error(new BusinessException("El plazo del crédito es obligatorio.")))
                 .filter(iu -> iu.getTypeCredit() != null && !iu.getTypeCredit().isBlank())
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("El tipo de crédito es obligatorio.")))
+                .switchIfEmpty(Mono.error(new BusinessException("El tipo de crédito es obligatorio.")))
                 .filter(iu -> CREDIT_TYPES.contains(iu.getTypeCredit()))
-                .switchIfEmpty(Mono.error(new IllegalArgumentException("El tipo de préstamo no existe.")));
+                .switchIfEmpty(Mono.error(new BusinessException("El tipo de préstamo no existe.")));
     }
 }
