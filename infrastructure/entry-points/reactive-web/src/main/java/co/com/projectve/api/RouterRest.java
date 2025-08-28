@@ -1,7 +1,7 @@
 package co.com.projectve.api;
 
-import co.com.projectve.api.dto.SaveRequestDTO;
-import co.com.projectve.model.infouser.InfoUser;
+import co.com.projectve.api.dto.CreditApplicationDTO;
+import co.com.projectve.model.creditapplication.CreditApplication;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
@@ -35,11 +34,11 @@ public class RouterRest {
                             description = "Recibe los datos de una solicitud y la persiste en el sistema.",
                             operationId = "saveRequestApi",
                             requestBody = @RequestBody(
-                                    content = @Content(schema = @Schema(implementation = SaveRequestDTO.class))
+                                    content = @Content(schema = @Schema(implementation = CreditApplicationDTO.class))
                             ),
                             responses = {
                                     @ApiResponse(responseCode = "200", description = "Solicitud guardada exitosamente",
-                                            content = @Content(schema = @Schema(implementation = InfoUser.class))
+                                            content = @Content(schema = @Schema(implementation = CreditApplication.class))
                                     ),
                                     @ApiResponse(responseCode = "400", description = "Error de validación",
                                             content = @Content(schema = @Schema(implementation = String.class, example = "{\"error\":\"El tipo de documento es obligatorio.\"}"))

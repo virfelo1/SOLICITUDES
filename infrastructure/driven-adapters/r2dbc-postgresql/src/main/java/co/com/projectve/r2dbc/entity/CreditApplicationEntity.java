@@ -15,7 +15,7 @@ import java.math.BigInteger;
 @Entity
 @Table(name = "users_info")
 @Data
-public class InfoUserEntity {
+public class CreditApplicationEntity {
     @Id
     private BigInteger id;
     private String documentType;
