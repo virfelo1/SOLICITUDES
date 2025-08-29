@@ -5,6 +5,8 @@ import co.com.projectve.model.creditapplication.CreditApplication;
 import co.com.projectve.model.creditapplication.gateways.CreditApplicationRepository;
 import co.com.projectve.usecase.creditapplication.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
@@ -13,30 +15,33 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CreditApplicationUseCase {
     private final CreditApplicationRepository creditApplicationRepository;
-
-    private final List<String> CREDIT_TYPES = Arrays.asList("Hipotecario", "Vehiculo", "Libre Inversion", "Educacion");
+    private static final Logger logger = LoggerFactory.getLogger(CreditApplicationUseCase.class);
 
     public Mono<CreditApplication> execute(CreditApplication creditApplication) {
-        return validateCreditApplication(creditApplication)
-                .flatMap(validatedUser -> {
-                    validatedUser.setCreditStatus("Pendiente de revision");
-                    return creditApplicationRepository.saveRequest(validatedUser);
-                });
-    }
-
-    private Mono<CreditApplication> validateCreditApplication(CreditApplication creditApplication) { //no hacerlo en la logica de negocio hacerlo en entry-point
+        logger.trace("Iniciando ejecución del caso de uso para solicitud de crédito. ID: {}", creditApplication.getId());
+        
         return Mono.just(creditApplication)
-                //.filter(iu -> iu.getDocumentType() != null && !iu.getDocumentType().isBlank())
-                //.switchIfEmpty(Mono.error(new BusinessException("El tipo de documento es obligatorio.")))
-                //.filter(iu -> iu.getDocumentNumber() != null)
-                //.switchIfEmpty(Mono.error(new BusinessException("El número de documento es obligatorio.")))
-                //.filter(iu -> iu.getCreditAmount() != null)
-                //.switchIfEmpty(Mono.error(new BusinessException("El monto del crédito es obligatorio.")))
-                //.filter(iu -> iu.getCreditTime() != null)
-                //.switchIfEmpty(Mono.error(new BusinessException("El plazo del crédito es obligatorio.")))
-                //.filter(iu -> iu.getTypeCredit() != null && !iu.getTypeCredit().isBlank())
-                //.switchIfEmpty(Mono.error(new BusinessException("El tipo de crédito es obligatorio.")))
-                .filter(iu -> CREDIT_TYPES.contains(iu.getTypeCredit()))
-                .switchIfEmpty(Mono.error(new BusinessException("El tipo de préstamo no existe.")));
+                .doOnNext(app -> {
+                    logger.trace("Aplicando regla de negocio: estableciendo estado 'Pendiente de revision'");
+                    logger.debug("Datos de la solicitud antes de procesar: tipoDocumento={}, numeroDocumento={}, montoCredito={}, plazoCredito={}, tipoCredito={}",
+                            app.getDocumentType(), app.getDocumentNumber(), app.getCreditAmount(), app.getCreditTime(), app.getTypeCredit());
+                })
+                .flatMap(validatedApp -> {
+                    validatedApp.setCreditStatus("Pendiente de revision");
+                    logger.trace("Estado de crédito actualizado a: {}", validatedApp.getCreditStatus());
+                    
+                    logger.trace("Invocando repositorio para persistir la solicitud");
+                    return creditApplicationRepository.saveRequest(validatedApp);
+                })
+                .doOnNext(savedApp -> {
+                    logger.info("Solicitud de crédito procesada exitosamente. ID: {}, Estado: {}", 
+                            savedApp.getId(), savedApp.getCreditStatus());
+                })
+                .doOnError(error -> {
+                    logger.error("Error durante la ejecución del caso de uso: {}", error.getMessage(), error);
+                })
+                .doFinally(signalType -> {
+                    logger.trace("Caso de uso finalizado. Señal: {}", signalType);
+                });
     }
 }

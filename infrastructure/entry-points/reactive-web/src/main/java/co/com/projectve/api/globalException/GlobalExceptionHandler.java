@@ -4,6 +4,7 @@ import co.com.projectve.usecase.creditapplication.exception.BusinessException;
 import co.com.projectve.usecase.creditapplication.exception.TechnicalException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.validation.ConstraintViolation;
+import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
 import org.springframework.core.annotation.Order;
@@ -12,16 +13,14 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import jakarta.validation.ConstraintViolationException;
 
 import java.nio.charset.StandardCharsets;
-import java.util.stream.Collectors;
-
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-@Order(-1) // Set a higher precedence to ensure it runs before the default handler
+@Order(-1)
 public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
 
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -37,7 +36,8 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
             errorBody = ex.getConstraintViolations().stream()
                     .collect(Collectors.toMap(
                             violation -> violation.getPropertyPath().toString(),
-                            ConstraintViolation::getMessage
+                            ConstraintViolation::getMessage,
+                            (existingMessage, newMessage) -> existingMessage // <-- This is the key change
                     ));
         } else if (throwable instanceof BusinessException) {
             status = HttpStatus.BAD_REQUEST;

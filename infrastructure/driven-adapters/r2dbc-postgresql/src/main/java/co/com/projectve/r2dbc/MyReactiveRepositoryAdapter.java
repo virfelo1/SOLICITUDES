@@ -18,7 +18,7 @@ import java.math.BigInteger;
 public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
         CreditApplication/* change for domain model */,
         CreditApplicationEntity/* change for adapter model */,
-        BigInteger,
+        Integer,
         MyReactiveRepository
         >
         implements CreditApplicationRepository {
@@ -28,19 +28,39 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
     public MyReactiveRepositoryAdapter(MyReactiveRepository repository, ObjectMapper mapper, TransactionalOperator transactionalOperator) {
         super(repository, mapper, entity -> mapper.map(entity, CreditApplication.class));
         this.transactionalOperator = transactionalOperator;
+        logger.trace("MyReactiveRepositoryAdapter inicializado con repository: {}, mapper: {}, transactionalOperator: {}", 
+                repository.getClass().getSimpleName(), mapper.getClass().getSimpleName(), transactionalOperator.getClass().getSimpleName());
     }
 
     @Override
     public Mono<CreditApplication> saveRequest(CreditApplication creditApplication) {
-        logger.trace("Iniciando solicitud de guardado para: {}", creditApplication); // Log the start of the process
+        logger.trace("Iniciando solicitud de guardado para CreditApplication. ID: {}, TipoDocumento: {}, NumeroDocumento: {}", 
+                creditApplication.getId(), creditApplication.getDocumentType(), creditApplication.getDocumentNumber());
+        
+        logger.debug("Datos completos de la solicitud a persistir: {}", creditApplication);
+        
         return super.save(creditApplication)
-                .doOnSuccess(savedCreditApplication -> logger.info("CreditApplication guardado exitosamente con ID: {}", savedCreditApplication.getId())) // Log on successful save
-                .doOnError(error -> logger.error("No se pudo guardar CreditApplication debido a: {}", error.getMessage(), error)) // Log errors
-                .doFinally(signalType -> logger.trace("Solicitud de guardado completada: {}", signalType)); // Log when the process is finished
+                .doOnSubscribe(subscription -> {
+                    logger.trace("Operación de guardado suscrita. Iniciando persistencia en base de datos");
+                })
+                .doOnNext(savedCreditApplication -> {
+                    logger.info("CreditApplication guardado exitosamente con ID: {}", savedCreditApplication.getId());
+                    logger.debug("Datos de la entidad guardada: {}", savedCreditApplication);
+                })
+                .doOnError(error -> {
+                    logger.error("No se pudo guardar CreditApplication debido a: {}", error.getMessage(), error);
+                    logger.trace("Detalles del error de persistencia: tipo={}, causa={}", 
+                            error.getClass().getSimpleName(), error.getCause() != null ? error.getCause().getMessage() : "N/A");
+                })
+                .doFinally(signalType -> {
+                    logger.trace("Solicitud de guardado completada. Señal: {}, ID de la solicitud: {}", 
+                            signalType, creditApplication.getId());
+                });
     }
 
     @PostConstruct
     public void testLog() {
-        logger.info("Log4j2 Funcionan correctamente en consola");
+        logger.info("Log4j2 funcionando correctamente en consola");
+        logger.trace("MyReactiveRepositoryAdapter inicializado y listo para operaciones de persistencia");
     }
 }

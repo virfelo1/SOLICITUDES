@@ -4,7 +4,6 @@ import lombok.*;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 
 @Getter
 @Setter
@@ -12,9 +11,9 @@ import java.math.BigInteger;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 public class CreditApplication {
-    private BigInteger id; //utilizar uno mas pequeño como integer
+    private Integer id;
     private String documentType;
-    private Long documentNumber; // aqui va string
+    private String documentNumber;
     private BigDecimal creditAmount; // float o double mas que necesario
     private Integer creditTime;
     private String typeCredit;

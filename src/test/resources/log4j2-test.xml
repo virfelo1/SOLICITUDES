@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <!-- Console Appender para tests -->
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+        
+        <!-- File Appender para tests -->
+        <File name="TestFile" fileName="logs/test-execution.log">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </File>
+        
+        <!-- Rolling File Appender para tests -->
+        <RollingFile name="RollingFile" 
+                     fileName="logs/test-rolling.log"
+                     filePattern="logs/test-rolling-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy />
+                <SizeBasedTriggeringPolicy size="10 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </RollingFile>
+    </Appenders>
+    
+    <Loggers>
+        <!-- Logger específico para tests de dominio -->
+        <Logger name="co.com.projectve.model" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        
+        <!-- Logger específico para tests de casos de uso -->
+        <Logger name="co.com.projectve.usecase" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        
+        <!-- Logger específico para tests de infraestructura -->
+        <Logger name="co.com.projectve.r2dbc" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        
+        <!-- Logger específico para tests de API -->
+        <Logger name="co.com.projectve.api" level="DEBUG" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        
+        <!-- Logger para Spring Framework en tests -->
+        <Logger name="org.springframework" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        
+        <!-- Logger para Reactor en tests -->
+        <Logger name="reactor" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        
+        <!-- Logger para Hibernate/JPA en tests -->
+        <Logger name="org.hibernate" level="WARN" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        
+        <!-- Logger para R2DBC en tests -->
+        <Logger name="io.r2dbc" level="INFO" additivity="false">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TestFile"/>
+        </Logger>
+        
+        <!-- Logger raíz para tests -->
+        <Root level="INFO">
+            <AppenderRef ref="Console"/>
+            <AppenderRef ref="TestFile"/>
+            <AppenderRef ref="RollingFile"/>
+        </Root>
+    </Loggers>
+</Configuration>
+
