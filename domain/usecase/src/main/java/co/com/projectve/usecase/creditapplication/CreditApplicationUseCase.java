@@ -3,14 +3,12 @@ package co.com.projectve.usecase.creditapplication;
 
 import co.com.projectve.model.creditapplication.CreditApplication;
 import co.com.projectve.model.creditapplication.gateways.CreditApplicationRepository;
-import co.com.projectve.usecase.creditapplication.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
-import java.util.List;
 
 @RequiredArgsConstructor
 public class CreditApplicationUseCase {
@@ -18,24 +16,24 @@ public class CreditApplicationUseCase {
     private static final Logger logger = LoggerFactory.getLogger(CreditApplicationUseCase.class);
 
     public Mono<CreditApplication> execute(CreditApplication creditApplication) {
-        logger.trace("Iniciando ejecución del caso de uso para solicitud de crédito. ID: {}", creditApplication.getId());
+        logger.trace("Iniciando ejecución del caso de uso para solicitud de crédito. ID: {}", creditApplication.getIdRequest());
         
         return Mono.just(creditApplication)
                 .doOnNext(app -> {
                     logger.trace("Aplicando regla de negocio: estableciendo estado 'Pendiente de revision'");
                     logger.debug("Datos de la solicitud antes de procesar: tipoDocumento={}, numeroDocumento={}, montoCredito={}, plazoCredito={}, tipoCredito={}",
-                            app.getDocumentType(), app.getDocumentNumber(), app.getCreditAmount(), app.getCreditTime(), app.getTypeCredit());
+                            app.getDocumentType(), app.getDocumentNumber(), app.getCreditAmount(), app.getCreditTime(), app.getIdLoanType());
                 })
                 .flatMap(validatedApp -> {
-                    validatedApp.setCreditStatus("Pendiente de revision");
-                    logger.trace("Estado de crédito actualizado a: {}", validatedApp.getCreditStatus());
+                    validatedApp.setIdState((short) 1);
+                    logger.trace("Estado de crédito actualizado a: {}", validatedApp.getIdState());
                     
                     logger.trace("Invocando repositorio para persistir la solicitud");
-                    return creditApplicationRepository.saveRequest(validatedApp);
+                    return creditApplicationRepository.saveRequest(validatedApp); // luego de validar guarda el requerimiento
                 })
                 .doOnNext(savedApp -> {
                     logger.info("Solicitud de crédito procesada exitosamente. ID: {}, Estado: {}", 
-                            savedApp.getId(), savedApp.getCreditStatus());
+                            savedApp.getIdRequest(), savedApp.getIdState());
                 })
                 .doOnError(error -> {
                     logger.error("Error durante la ejecución del caso de uso: {}", error.getMessage(), error);
@@ -44,4 +42,10 @@ public class CreditApplicationUseCase {
                     logger.trace("Caso de uso finalizado. Señal: {}", signalType);
                 });
     }
+
+    public Flux<CreditApplication> listRequest() {
+        // Caso de uso para obtener el listado completo de solicitudes desde el repositorio
+        return creditApplicationRepository.listRequest();
+    }
+
 }

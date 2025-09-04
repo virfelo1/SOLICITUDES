@@ -197,3 +197,4 @@ logging.level.co.com.projectve: WARN
 - Grafana para visualización
 - ELK Stack para análisis de logs
 - Zipkin para trazabilidad distribuida
+

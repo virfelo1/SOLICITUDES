@@ -10,9 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.reactive.TransactionalOperator;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.math.BigInteger;
 
 @Repository
 public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
@@ -35,7 +35,7 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
     @Override
     public Mono<CreditApplication> saveRequest(CreditApplication creditApplication) {
         logger.trace("Iniciando solicitud de guardado para CreditApplication. ID: {}, TipoDocumento: {}, NumeroDocumento: {}", 
-                creditApplication.getId(), creditApplication.getDocumentType(), creditApplication.getDocumentNumber());
+                creditApplication.getIdRequest(), creditApplication.getDocumentType(), creditApplication.getDocumentNumber());
         
         logger.debug("Datos completos de la solicitud a persistir: {}", creditApplication);
         
@@ -44,7 +44,7 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                     logger.trace("Operación de guardado suscrita. Iniciando persistencia en base de datos");
                 })
                 .doOnNext(savedCreditApplication -> {
-                    logger.info("CreditApplication guardado exitosamente con ID: {}", savedCreditApplication.getId());
+                    logger.info("CreditApplication guardado exitosamente con ID: {}", savedCreditApplication.getIdRequest());
                     logger.debug("Datos de la entidad guardada: {}", savedCreditApplication);
                 })
                 .doOnError(error -> {
@@ -54,8 +54,13 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                 })
                 .doFinally(signalType -> {
                     logger.trace("Solicitud de guardado completada. Señal: {}, ID de la solicitud: {}", 
-                            signalType, creditApplication.getId());
+                            signalType, creditApplication.getIdRequest());
                 });
+    }
+
+    @Override
+    public Flux<CreditApplication> listRequest() {
+        return super.findAll();
     }
 
     @PostConstruct

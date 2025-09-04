@@ -38,14 +38,14 @@ public class Handler {
                     content = @Content(schema = @Schema(implementation = CreditApplicationDTO.class))),
             responses = {
                     @ApiResponse(responseCode = "200", description = "Solicitud de crédito guardada exitosamente",
-                            content = @Content(schema = @Schema(implementation = CreditApplication.class))),
+                            content = @Content(schema = @Schema(implementation = CreditApplicationDTO.class))),
                     @ApiResponse(responseCode = "400", description = "Error de validación en los datos de la solicitud",
                             content = @Content(schema = @Schema(implementation = Map.class, example = "{\"error\":\"El tipo de documento es obligatorio.\"}"))),
                     @ApiResponse(responseCode = "500", description = "Error interno del servidor")
             })
 
-    public Mono<ServerResponse> saveRequestApi(ServerRequest request) {
-        return request.bodyToMono(CreditApplicationDTO.class)
+    public Mono<ServerResponse> saveRequestApi(ServerRequest serverRequest) {
+        return serverRequest.bodyToMono(CreditApplicationDTO.class)
                 .flatMap(dto -> {
                     // Validación del DTO usando Bean Validation
                     Set<ConstraintViolation<CreditApplicationDTO>> violations = validator.validate(dto);
@@ -58,6 +58,10 @@ public class Handler {
                     return creditApplicationUseCase.execute(model);
                 })
                 .flatMap(response -> ServerResponse.ok().bodyValue(response));
+    }
+
+    public Mono<ServerResponse> listRequest(ServerRequest serverRequest){ //aqui esta el metodo para capturar la informacion que va al listado
+        return ServerResponse.ok().body(creditApplicationUseCase.listRequest(), CreditApplication.class);
     }
 }
 

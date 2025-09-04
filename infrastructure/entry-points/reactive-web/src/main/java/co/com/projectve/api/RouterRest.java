@@ -17,6 +17,7 @@ import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
 import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
+import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 @Configuration
@@ -49,8 +50,8 @@ public class RouterRest {
             )
     })
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
-        return route(POST("/api/v1/solicitud"), handler::saveRequestApi);
-              //  .andRoute(POST("/api/usecase/otherpath"), handler::listenPOSTUseCase)
-              //  .and(route(GET("/api/otherusercase/path"), handler::listenGETOtherUseCase));
+        return route(POST("/api/v1/solicitud"), handler::saveRequestApi)
+                .andRoute(GET("/api/v1/solicitud"), handler::listRequest); //este es el endpoint para el listado de solicitudes
+        // .andRoute(POST("/api/usecase/otherpath"), handler::listenPOSTUseCase)
     }
 }

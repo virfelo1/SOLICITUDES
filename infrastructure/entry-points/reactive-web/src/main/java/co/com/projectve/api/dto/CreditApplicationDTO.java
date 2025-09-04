@@ -26,9 +26,15 @@ public record CreditApplicationDTO(
         @Max(value = 360, message = "El plazo máximo es 360 meses (30 años)")
         Integer creditTime,
 
-        @Schema(description = "Tipo de crédito (Hipotecario, Vehiculo, Libre Inversion, Educacion)", example = "Hipotecario")
-        @NotBlank(message = "El tipo de crédito es obligatorio")
-        @Pattern(regexp = "^(Hipotecario|Vehiculo|Libre Inversion|Educacion)$", message = "El tipo de crédito debe ser Hipotecario, Vehiculo, Libre Inversion o Educacion")
-        String typeCredit
+        @Schema(description = "Correo electrónico único del usuario", example = "juan.garcia@email.com", requiredMode = Schema.RequiredMode.REQUIRED, format = "email")
+        @Pattern(regexp = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$",
+                message = "El correo no es valido")
+        @NotBlank(message = "El email es obligatorio")
+        String email,
+
+        @NotNull(message = "El tipo de crédito es obligatorio")
+        @Min(value = 1, message = "El tipo de crédito debe ser 1, 2, 3 o 4")
+        @Max(value = 4, message = "El tipo de crédito debe ser 1, 2, 3 o 4")
+        Short idLoanType
 
 ) {}

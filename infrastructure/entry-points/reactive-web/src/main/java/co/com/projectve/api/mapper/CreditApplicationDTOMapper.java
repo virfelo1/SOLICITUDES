@@ -7,7 +7,7 @@ import org.mapstruct.Mapping;
 
 @Mapper(componentModel = "spring")
 public interface CreditApplicationDTOMapper {
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "creditStatus", ignore = true)
+    @Mapping(target = "idRequest", ignore = true)
+    @Mapping(target = "idState", ignore = true)
     CreditApplication toModel (CreditApplicationDTO creditApplicationDTO);
 }

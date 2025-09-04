@@ -42,6 +42,14 @@ subprojects {
         testAnnotationProcessor  "org.projectlombok:lombok:${lombokVersion}"
         implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
         compileOnly "org.springdoc:springdoc-openapi-starter-webflux-ui:${rootProject.ext.swaggerVersion}"
+
+        // MapStruct (annotations only at compile time) and processors
+        compileOnly "org.mapstruct:mapstruct:${rootProject.ext.mapstructVersion}"
+        annotationProcessor  "org.mapstruct:mapstruct-processor:${rootProject.ext.mapstructVersion}"
+        // Enable Lombok + MapStruct better binding
+        annotationProcessor  "org.projectlombok:lombok-mapstruct-binding:${rootProject.ext.lombokMapstructBindingVersion}"
+        testAnnotationProcessor  "org.mapstruct:mapstruct-processor:${rootProject.ext.mapstructVersion}"
+        testAnnotationProcessor  "org.projectlombok:lombok-mapstruct-binding:${rootProject.ext.lombokMapstructBindingVersion}"
     }
 
     tasks.withType(Test).configureEach {

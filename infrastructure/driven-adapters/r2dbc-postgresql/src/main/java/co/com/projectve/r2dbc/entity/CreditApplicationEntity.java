@@ -14,12 +14,12 @@ import java.math.BigDecimal;
 @Data
 public class CreditApplicationEntity {
     @Id
-    @Column("id")
-    private Integer id;
+    @Column("id_request")
+    private Integer idRequest;
 
     @Column("document_type")
     private String documentType;
-    //@Column(unique =true)
+
     @Column("document_number")
     private String documentNumber;
 
@@ -29,9 +29,12 @@ public class CreditApplicationEntity {
     @Column("credit_time")
     private Integer creditTime;
 
-    @Column("type_credit")
-    private String typeCredit;
+    @Column("email")
+    private String email;
 
-    @Column("credit_status")
-    private String creditStatus;
+    @Column("id_state") //esta asociado a la tabla: "loan_type"
+    private Short idState;
+
+    @Column("id_loan_type") //esta asociado a la tabla: "states"
+    private Short idLoanType;
 }

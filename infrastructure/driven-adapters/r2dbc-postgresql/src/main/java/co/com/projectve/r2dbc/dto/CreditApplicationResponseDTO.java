@@ -1,22 +1,22 @@
-package co.com.projectve.model.creditapplication;
+package co.com.projectve.r2dbc.dto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
 
-@Getter
-@Setter
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
-@Builder(toBuilder = true)
-public class CreditApplication {
+@NoArgsConstructor
+public class CreditApplicationResponseDTO {
     private Integer idRequest;
     private String documentType;
     private String documentNumber;
     private BigDecimal creditAmount;
     private Integer creditTime;
     private String email;
-    private Short idState;
-    private Short idLoanType;
+
+    private StateDTO state;
+    private LoanTypeDTO loanType;
 }
