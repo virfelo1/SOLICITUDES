@@ -3,6 +3,7 @@ package co.com.projectve.api;
 import co.com.projectve.api.dto.CreditApplicationDTO;
 import co.com.projectve.api.mapper.CreditApplicationDTOMapper;
 import co.com.projectve.model.creditapplication.CreditApplication;
+import co.com.projectve.r2dbc.MyReactiveRepositoryAdapter;
 import co.com.projectve.usecase.creditapplication.CreditApplicationUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -28,6 +29,7 @@ public class Handler {
 //private  final UseCase2 useCase2;
     private final CreditApplicationUseCase creditApplicationUseCase;
     private final CreditApplicationDTOMapper creditApplicationDTOMapper;
+    private final MyReactiveRepositoryAdapter myReactiveRepositoryAdapter;
     private final Validator validator; // Inyectamos el validador de Bean Validation
 
     //private final CreditApplicationUseCase creditApplicationUseCase;
@@ -60,8 +62,14 @@ public class Handler {
                 .flatMap(response -> ServerResponse.ok().bodyValue(response));
     }
 
+    //public Mono<ServerResponse> listRequest(ServerRequest serverRequest){ //aqui esta el metodo para capturar la informacion que va al listado
+    //    return ServerResponse.ok().body(creditApplicationUseCase.listRequest(), CreditApplication.class);
+    //}
     public Mono<ServerResponse> listRequest(ServerRequest serverRequest){ //aqui esta el metodo para capturar la informacion que va al listado
-        return ServerResponse.ok().body(creditApplicationUseCase.listRequest(), CreditApplication.class);
+        return ServerResponse.ok().body(
+                myReactiveRepositoryAdapter.listRequestview(),
+                co.com.projectve.r2dbc.dto.CreditApplicationListView.class
+        );
     }
 }
 

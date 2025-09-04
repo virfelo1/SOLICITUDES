@@ -2,6 +2,7 @@ package co.com.projectve.r2dbc.entity;
 
 
 import jakarta.persistence.Entity;
+import org.springframework.data.annotation.Transient;
 import lombok.*;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.relational.core.mapping.Column;
