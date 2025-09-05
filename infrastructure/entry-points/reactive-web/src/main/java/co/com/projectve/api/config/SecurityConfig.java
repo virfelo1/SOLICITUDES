@@ -44,7 +44,7 @@ public class SecurityConfig {
                 .formLogin(formLogin -> formLogin.disable())
                 .authorizeExchange(authorize -> authorize
                         .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
-                        .pathMatchers(HttpMethod.GET, "/api/v1/solicitud").hasAnyRole("ADMIN", "ASESOR","1")
+                        .pathMatchers(HttpMethod.GET, "/api/v1/solicitud").hasAnyRole("ADMIN", "ASESOR")
                         .anyExchange().authenticated()
                 )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
