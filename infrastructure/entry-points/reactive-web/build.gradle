@@ -2,13 +2,23 @@ dependencies {
     implementation project(':usecase')
     implementation project(':model')
     implementation project(':r2dbc-postgresql')
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.security:spring-security-oauth2-resource-server'
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation "org.mapstruct:mapstruct:$mapstructVersion"
-    annotationProcessor "org.mapstruct:mapstruct-processor:$mapstructVersion"
-    annotationProcessor "org.projectlombok:lombok-mapstruct-binding:$lombokMapstructBindingVersion"
+
     implementation 'org.springdoc:springdoc-openapi-starter-webflux-ui:2.3.0'
     implementation 'org.hibernate.validator:hibernate-validator:8.0.1.Final'
     implementation 'org.glassfish:jakarta.el:4.0.2' // Necesario para expresiones en validaciones
+    implementation("com.auth0:java-jwt:4.5.0")
+
+    implementation 'io.jsonwebtoken:jjwt-api:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.5'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.5'
+
+    annotationProcessor "org.mapstruct:mapstruct-processor:$mapstructVersion"
+    annotationProcessor "org.projectlombok:lombok-mapstruct-binding:$lombokMapstructBindingVersion"
 }

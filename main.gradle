@@ -43,6 +43,7 @@ subprojects {
         implementation platform("org.springframework.boot:spring-boot-dependencies:${springBootVersion}")
         compileOnly "org.springdoc:springdoc-openapi-starter-webflux-ui:${rootProject.ext.swaggerVersion}"
 
+
         // MapStruct (annotations only at compile time) and processors
         compileOnly "org.mapstruct:mapstruct:${rootProject.ext.mapstructVersion}"
         annotationProcessor  "org.mapstruct:mapstruct-processor:${rootProject.ext.mapstructVersion}"

@@ -2,6 +2,7 @@ package co.com.projectve.api;
 
 import co.com.projectve.api.dto.CreditApplicationDTO;
 import co.com.projectve.model.creditapplication.CreditApplication;
+import co.com.projectve.r2dbc.dto.CreditApplicationListView;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -43,6 +44,23 @@ public class RouterRest {
                                     ),
                                     @ApiResponse(responseCode = "400", description = "Error de validación",
                                             content = @Content(schema = @Schema(implementation = String.class, example = "{\"error\":\"El tipo de documento es obligatorio.\"}"))
+                                    ),
+                                    @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+                            }
+                    )
+            ),
+            @RouterOperation(
+                    path = "/api/v1/solicitud",
+                    method = RequestMethod.GET,
+                    beanClass = Handler.class,
+                    beanMethod = "listRequest",
+                    operation = @Operation(
+                            summary = "Lista todas las solicitudes de crédito",
+                            description = "Retorna el listado con información enriquecida (estado y tipo de préstamo).",
+                            operationId = "listRequest",
+                            responses = {
+                                    @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente",
+                                            content = @Content(schema = @Schema(implementation = CreditApplicationListView.class))
                                     ),
                                     @ApiResponse(responseCode = "500", description = "Error interno del servidor")
                             }
