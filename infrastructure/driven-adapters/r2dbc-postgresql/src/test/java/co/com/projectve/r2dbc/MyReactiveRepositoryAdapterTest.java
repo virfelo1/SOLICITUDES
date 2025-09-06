@@ -41,7 +41,7 @@ class MyReactiveRepositoryAdapterTest {
                 .thenAnswer(invocation -> {
                     CreditApplicationEntity entity = invocation.getArgument(0);
                     return CreditApplication.builder()
-                            .id(entity.getId())
+                            .id(entity.getIdRequest())
                             .documentType(entity.getDocumentType())
                             .documentNumber(entity.getDocumentNumber())
                             .creditAmount(entity.getCreditAmount())

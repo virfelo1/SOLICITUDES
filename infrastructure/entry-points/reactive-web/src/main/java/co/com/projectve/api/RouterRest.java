@@ -2,7 +2,6 @@ package co.com.projectve.api;
 
 import co.com.projectve.api.dto.CreditApplicationDTO;
 import co.com.projectve.model.creditapplication.CreditApplication;
-import co.com.projectve.r2dbc.dto.CreditApplicationListView;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -60,7 +59,7 @@ public class RouterRest {
                             operationId = "listRequest",
                             responses = {
                                     @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente",
-                                            content = @Content(schema = @Schema(implementation = CreditApplicationListView.class))
+                                            content = @Content(schema = @Schema(implementation = CreditApplicationDTO.class))
                                     ),
                                     @ApiResponse(responseCode = "500", description = "Error interno del servidor")
                             }

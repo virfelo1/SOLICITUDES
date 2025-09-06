@@ -16,6 +16,8 @@ import org.springframework.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import java.math.BigDecimal;
+
 
 @Repository
 public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
@@ -69,6 +71,15 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
         return super.findAll();
     }
 
+    @Override
+    public Mono<BigDecimal> sumAllCreditsByEmail(String email) {
+        return databaseClient.sql("SELECT SUM(credit_amount) FROM credit_application WHERE email = :email")
+                .bind("email", email)
+                .map(row -> row.get(0, BigDecimal.class))
+                .one()
+                .defaultIfEmpty(BigDecimal.ZERO);
+    }
+
     public Flux<CreditApplicationListViewDTO> listRequestview() {
         String sql = "SELECT ui.id_request, ui.document_type, ui.document_number, ui.credit_amount, ui.credit_time, ui.email, " +
                 "s.name_state AS name_state, lt.name_loan AS name_loan " +
@@ -91,6 +102,7 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                 })
                 .all();
     }
+
 
     @PostConstruct
     public void testLog() {

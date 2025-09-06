@@ -4,7 +4,7 @@ import co.com.projectve.api.dto.CreditApplicationDTO;
 import co.com.projectve.api.mapper.CreditApplicationDTOMapper;
 import co.com.projectve.model.creditapplication.CreditApplication;
 import co.com.projectve.r2dbc.MyReactiveRepositoryAdapter;
-import co.com.projectve.r2dbc.dto.CreditApplicationListView;
+import co.com.projectve.r2dbc.dto.CreditApplicationListViewDTO;
 import co.com.projectve.usecase.creditapplication.CreditApplicationUseCase;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -86,7 +86,7 @@ public class Handler {
             tags = {"Solicitudes"},
             responses = {
                     @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente",
-                            content = @Content(schema = @Schema(implementation = CreditApplicationListView.class))
+                            content = @Content(schema = @Schema(implementation = CreditApplicationListViewDTO.class))
                     ),
                     @ApiResponse(responseCode = "500", description = "Error interno del servidor")
             }
@@ -103,7 +103,7 @@ public class Handler {
                 .doFinally(signal -> logger.trace("[listRequest] Flujo finalizado con señal: {}", signal));
 
         logger.trace("[listRequest] Enviando respuesta 200 OK");
-        return ServerResponse.ok().body(listado, CreditApplicationListView.class);
+        return ServerResponse.ok().body(listado, CreditApplicationListViewDTO.class);
     }
 }
 
