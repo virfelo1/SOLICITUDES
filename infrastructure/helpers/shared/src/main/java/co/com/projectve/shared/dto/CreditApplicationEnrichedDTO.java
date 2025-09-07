@@ -18,6 +18,7 @@ public class CreditApplicationEnrichedDTO {
     private String email;
     private String nameState;
     private String nameLoan;
+    private Double interestRate;
     private String firstName;
     private BigDecimal baseSalary;
 }

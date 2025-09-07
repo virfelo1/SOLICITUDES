@@ -19,6 +19,7 @@ import reactor.core.publisher.Mono;
 import co.com.projectve.shared.dto.CreditApplicationEnrichedDTO;
 import co.com.projectve.shared.dto.UserInfoDTO;
 import reactor.util.function.Tuple3;
+import reactor.util.function.Tuple4;
 import reactor.util.function.Tuples;
 
 
@@ -113,18 +114,24 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                 .all()
                 .collectMap(t -> t.getT1(), t -> t.getT2());
 
-        Mono<Map<Short, String>> loanTypesMapMono = databaseClient.sql("SELECT id_loan_type, name_loan FROM loan_type")
+        Mono<Map<Short, String>> loanTypeNameMapMono = databaseClient.sql("SELECT id_loan_type, name_loan FROM loan_type")
                 .map((row, meta) -> Tuples.of(((Number) row.get("id_loan_type")).shortValue(), (String) row.get("name_loan")))
                 .all()
                 .collectMap(t -> t.getT1(), t -> t.getT2());
 
-        Mono<Tuple3<Map<String, UserInfoDTO>, Map<Short, String>, Map<Short, String>>> combined =
-                Mono.zip(usersMapMono, statesMapMono, loanTypesMapMono);
+        Mono<Map<Short, Double>> loanTypeRateMapMono = databaseClient.sql("SELECT id_loan_type, interest_rate FROM loan_type")
+                .map((row, meta) -> Tuples.of(((Number) row.get("id_loan_type")).shortValue(), ((Number) row.get("interest_rate")).doubleValue()))
+                .all()
+                .collectMap(t -> t.getT1(), t -> t.getT2());
+
+        Mono<Tuple4<Map<String, UserInfoDTO>, Map<Short, String>, Map<Short, String>, Map<Short, Double>>> combined =
+                Mono.zip(usersMapMono, statesMapMono, loanTypeNameMapMono, loanTypeRateMapMono);
 
         return combined.flatMapMany(tuple -> {
             Map<String, UserInfoDTO> usersMap = tuple.getT1();
             Map<Short, String> statesMap = tuple.getT2();
             Map<Short, String> loansMap = tuple.getT3();
+            Map<Short, Double> ratesMap = tuple.getT4();
 
             return creditApplicationsFlux.map(creditApp -> {
                 String normalizedEmail = creditApp.getEmail() == null ? "" : creditApp.getEmail().trim().toLowerCase();
@@ -134,6 +141,7 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                 }
                 String nameState = statesMap.get(creditApp.getIdState());
                 String nameLoan = loansMap.get(creditApp.getIdLoanType());
+                Double interestRate = ratesMap.get(creditApp.getIdLoanType());
 
                 return new CreditApplicationEnrichedDTO(
                         creditApp.getIdRequest(),
@@ -144,6 +152,7 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                         creditApp.getEmail(),
                         nameState,
                         nameLoan,
+                        interestRate,
                         user != null ? user.getFirstName() : null,
                         user != null ? user.getBaseSalary() : null
                 );
