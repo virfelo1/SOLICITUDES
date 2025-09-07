@@ -48,4 +48,9 @@ public class CreditApplicationUseCase {
         return creditApplicationRepository.listRequest();
     }
 
+    public Flux<CreditApplication> listAllEnriched() {
+        // Caso de uso para obtener el listado completo de solicitudes desde el repositorio
+        return creditApplicationRepository.listAllEnriched();
+    }
+
 }

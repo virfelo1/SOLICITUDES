@@ -6,17 +6,24 @@ import co.com.projectve.r2dbc.entity.CreditApplicationEntity;
 import co.com.projectve.r2dbc.dto.CreditApplicationListViewDTO;
 import co.com.projectve.r2dbc.mapper.CreditApplicationEntityMapper;
 import co.com.projectve.r2dbc.helper.ReactiveAdapterOperations;
+import co.com.projectve.shared.clients.AuthClient;
+import co.com.projectve.shared.dto.CreditApplicationResponseDTO;
+import co.com.projectve.shared.dto.UserListDTO;
 import jakarta.annotation.PostConstruct;
 import org.reactivecommons.utils.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.ReactiveSecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-
-import java.math.BigDecimal;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Repository
@@ -29,24 +36,26 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
         implements CreditApplicationRepository {
     private final TransactionalOperator transactionalOperator;
     private final DatabaseClient databaseClient;
+    private final AuthClient authClient;
     private final CreditApplicationEntityMapper listViewMapper = new CreditApplicationEntityMapper() {};
     private static final Logger logger = LoggerFactory.getLogger(MyReactiveRepositoryAdapter.class);
 
-    public MyReactiveRepositoryAdapter(MyReactiveRepository repository, ObjectMapper mapper, TransactionalOperator transactionalOperator, DatabaseClient databaseClient) {
+    public MyReactiveRepositoryAdapter(MyReactiveRepository repository, ObjectMapper mapper, TransactionalOperator transactionalOperator, DatabaseClient databaseClient, AuthClient authClient) {
         super(repository, mapper, entity -> mapper.map(entity, CreditApplication.class));
         this.transactionalOperator = transactionalOperator;
         this.databaseClient = databaseClient;
-        logger.trace("MyReactiveRepositoryAdapter inicializado con repository: {}, mapper: {}, transactionalOperator: {}", 
+        this.authClient = authClient;
+        logger.trace("MyReactiveRepositoryAdapter inicializado con repository: {}, mapper: {}, transactionalOperator: {}",
                 repository.getClass().getSimpleName(), mapper.getClass().getSimpleName(), transactionalOperator.getClass().getSimpleName());
     }
 
     @Override
     public Mono<CreditApplication> saveRequest(CreditApplication creditApplication) {
-        logger.trace("Iniciando solicitud de guardado para CreditApplication. ID: {}, TipoDocumento: {}, NumeroDocumento: {}", 
+        logger.trace("Iniciando solicitud de guardado para CreditApplication. ID: {}, TipoDocumento: {}, NumeroDocumento: {}",
                 creditApplication.getIdRequest(), creditApplication.getDocumentType(), creditApplication.getDocumentNumber());
-        
+
         logger.debug("Datos completos de la solicitud a persistir: {}", creditApplication);
-        
+
         return super.save(creditApplication)
                 .doOnSubscribe(subscription -> {
                     logger.trace("Operación de guardado suscrita. Iniciando persistencia en base de datos");
@@ -57,11 +66,11 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                 })
                 .doOnError(error -> {
                     logger.error("No se pudo guardar CreditApplication debido a: {}", error.getMessage(), error);
-                    logger.trace("Detalles del error de persistencia: tipo={}, causa={}", 
+                    logger.trace("Detalles del error de persistencia: tipo={}, causa={}",
                             error.getClass().getSimpleName(), error.getCause() != null ? error.getCause().getMessage() : "N/A");
                 })
                 .doFinally(signalType -> {
-                    logger.trace("Solicitud de guardado completada. Señal: {}, ID de la solicitud: {}", 
+                    logger.trace("Solicitud de guardado completada. Señal: {}, ID de la solicitud: {}",
                             signalType, creditApplication.getIdRequest());
                 });
     }
@@ -72,37 +81,48 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
     }
 
     @Override
-    public Mono<BigDecimal> sumAllCreditsByEmail(String email) {
-        return databaseClient.sql("SELECT SUM(credit_amount) FROM credit_application WHERE email = :email")
-                .bind("email", email)
-                .map(row -> row.get(0, BigDecimal.class))
-                .one()
-                .defaultIfEmpty(BigDecimal.ZERO);
-    }
-
-    public Flux<CreditApplicationListViewDTO> listRequestview() {
-        String sql = "SELECT ui.id_request, ui.document_type, ui.document_number, ui.credit_amount, ui.credit_time, ui.email, " +
-                "s.name_state AS name_state, lt.name_loan AS name_loan " +
-                "FROM users_info ui " +
-                "JOIN states s ON s.id_state = ui.id_state " +
-                "JOIN loan_type lt ON lt.id_loan_type = ui.id_loan_type";
-
-        return databaseClient.sql(sql)
-                .map(row -> {
-                    CreditApplicationListViewDTO dto = new CreditApplicationListViewDTO();
-                    dto.setIdRequest(row.get("id_request", Integer.class));
-                    dto.setDocumentType(row.get("document_type", String.class));
-                    dto.setDocumentNumber(row.get("document_number", String.class));
-                    dto.setCreditAmount(row.get("credit_amount", java.math.BigDecimal.class));
-                    dto.setCreditTime(row.get("credit_time", Integer.class));
-                    dto.setEmail(row.get("email", String.class));
-                    dto.setNameState(row.get("name_state", String.class));
-                    dto.setNameLoan(row.get("name_loan", String.class));
-                    return dto;
+    public Flux<CreditApplication> listAllEnriched() {
+        // Se obtiene el token JWT del contexto de seguridad reactivo
+        return ReactiveSecurityContextHolder.getContext()
+                .map(securityContext -> {
+                    Authentication authentication = securityContext.getAuthentication();
+                    if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
+                        return ((Jwt) authentication.getPrincipal()).getTokenValue();
+                    }
+                    return "";
                 })
-                .all();
-    }
+                .flatMapMany(jwtToken -> {
+                    logger.info("JWT extraído del contexto de seguridad: {}", jwtToken);
 
+                    // Se obtienen las solicitudes de crédito de la base de datos local
+                    Flux<CreditApplication> creditApplicationsFlux = super.findAll();
+
+                    // Se obtiene el mapa de usuarios del microservicio de autenticación
+                    Mono<Map<String, UserListDTO>> usersMapMono = authClient.listAllUsers(jwtToken)
+                            .collect(Collectors.toMap(UserListDTO::getEmail, Function.identity()));
+
+                    // Se combinan los dos flujos para enriquecer los datos
+                    return usersMapMono.flatMapMany(usersMap ->
+                            creditApplicationsFlux.map(creditApp -> {
+                                UserListDTO userDetails = usersMap.get(creditApp.getEmail());
+                                if (userDetails != null) {
+                                    // Se crea un nuevo objeto CreditApplication con los datos enriquecidos
+                                    return new CreditApplication(
+                                            creditApp.getIdRequest(),
+                                            creditApp.getDocumentType(),
+                                            creditApp.getDocumentNumber(),
+                                            creditApp.getCreditAmount(),
+                                            creditApp.getCreditTime(),
+                                            creditApp.getEmail(),
+                                            creditApp.getIdState(),
+                                            creditApp.getIdLoanType()
+                                    );
+                                }
+                                return creditApp; // Se devuelve el objeto original si no se encuentran detalles del usuario
+                            })
+                    );
+                });
+    }
 
     @PostConstruct
     public void testLog() {

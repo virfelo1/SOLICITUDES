@@ -1,4 +1,4 @@
-package co.com.projectve.r2dbc.dto;
+package co.com.projectve.shared.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,7 +16,8 @@ public class CreditApplicationResponseDTO {
     private BigDecimal creditAmount;
     private Integer creditTime;
     private String email;
-
-    private StateDTO state;
-    private LoanTypeDTO loanType;
+    private String nameState;
+    private String nameLoan;
+    private String firstName;
+    private BigDecimal baseSalary;
 }
