@@ -142,6 +142,20 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                 String nameState = statesMap.get(creditApp.getIdState());
                 String nameLoan = loansMap.get(creditApp.getIdLoanType());
                 Double interestRate = ratesMap.get(creditApp.getIdLoanType());
+                double principal = creditApp.getCreditAmount() != null ? creditApp.getCreditAmount().doubleValue() : 0d;
+                int periods = creditApp.getCreditTime() != null ? creditApp.getCreditTime() : 0;
+                double annualRate = interestRate != null ? interestRate : 0d;
+                double monthlyRequestAmount = 0d;
+
+// Convertir la tasa anual que viene en porcentaje (ej: 12.0) a decimal (0.12)
+                annualRate = annualRate / 100.0;
+
+                if (annualRate > 0d && periods > 0) {
+                    double monthlyRate = annualRate / 12.0;
+                    monthlyRequestAmount = (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -periods));
+                } else if (periods > 0) {
+                    monthlyRequestAmount = principal / periods;
+                }
 
                 return new CreditApplicationEnrichedDTO(
                         creditApp.getIdRequest(),
@@ -154,7 +168,8 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                         nameLoan,
                         interestRate,
                         user != null ? user.getFirstName() : null,
-                        user != null ? user.getBaseSalary() : null
+                        user != null ? user.getBaseSalary() : null,
+                        monthlyRequestAmount
                 );
             });
         });

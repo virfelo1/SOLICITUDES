@@ -21,4 +21,5 @@ public class CreditApplicationEnrichedDTO {
     private Double interestRate;
     private String firstName;
     private BigDecimal baseSalary;
+    private double monthlyRequestAmount;
 }
