@@ -5,8 +5,9 @@ import co.com.projectve.api.mapper.CreditApplicationDTOMapper;
 import co.com.projectve.model.creditapplication.CreditApplication;
 import co.com.projectve.r2dbc.MyReactiveRepositoryAdapter;
 import co.com.projectve.r2dbc.dto.CreditApplicationListViewDTO;
+import co.com.projectve.shared.dto.UserInfoDTO;
 import co.com.projectve.usecase.creditapplication.CreditApplicationUseCase;
-import co.com.projectve.shared.dto.CreditApplicationResponseDTO;
+import co.com.projectve.shared.dto.CreditApplicationEnrichedDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -95,7 +96,7 @@ public class Handler {
     public Mono<ServerResponse> listRequest(ServerRequest serverRequest){ //aqui esta el metodo para capturar la informacion que va al listado
         logger.trace("[listRequest] Recibida solicitud GET /api/v1/solicitud");
         logger.info("Iniciando listado de solicitudes de crédito");
-        var list = myReactiveRepositoryAdapter.listAllEnriched()
+        var list = myReactiveRepositoryAdapter.listAllEnrichedDTO()
                 .doFirst(() -> logger.trace("[listRequest] Preparando flujo de datos"))
                 .doOnSubscribe(s -> logger.debug("Suscrito al flujo de listado de solicitudes"))
                 .doOnNext(item -> logger.debug("Solicitud listada: {}", item))
@@ -104,7 +105,9 @@ public class Handler {
                 .doFinally(signal -> logger.trace("[listRequest] Flujo finalizado con señal: {}", signal));
 
         logger.trace("[listRequest] Enviando respuesta 200 OK");
-        return ServerResponse.ok().body(list, CreditApplicationResponseDTO.class);
+        return ServerResponse.ok().body(list, UserInfoDTO.class);
     }
+
+
 }
 

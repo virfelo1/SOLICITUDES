@@ -3,27 +3,23 @@ package co.com.projectve.r2dbc;
 import co.com.projectve.model.creditapplication.CreditApplication;
 import co.com.projectve.model.creditapplication.gateways.CreditApplicationRepository;
 import co.com.projectve.r2dbc.entity.CreditApplicationEntity;
-import co.com.projectve.r2dbc.dto.CreditApplicationListViewDTO;
 import co.com.projectve.r2dbc.mapper.CreditApplicationEntityMapper;
 import co.com.projectve.r2dbc.helper.ReactiveAdapterOperations;
 import co.com.projectve.shared.clients.AuthClient;
-import co.com.projectve.shared.dto.CreditApplicationResponseDTO;
-import co.com.projectve.shared.dto.UserListDTO;
+import java.util.Map;
 import jakarta.annotation.PostConstruct;
 import org.reactivecommons.utils.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.ReactiveSecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import co.com.projectve.shared.dto.CreditApplicationEnrichedDTO;
+import co.com.projectve.shared.dto.UserInfoDTO;
+import reactor.util.function.Tuple3;
+import reactor.util.function.Tuples;
 
 
 @Repository
@@ -75,53 +71,84 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                 });
     }
 
-    @Override
+    /*@Override
     public Flux<CreditApplication> listRequest() {
         return super.findAll();
-    }
+    }*/
 
     @Override
     public Flux<CreditApplication> listAllEnriched() {
-        // Se obtiene el token JWT del contexto de seguridad reactivo
-        return ReactiveSecurityContextHolder.getContext()
-                .map(securityContext -> {
-                    Authentication authentication = securityContext.getAuthentication();
-                    if (authentication != null && authentication.getPrincipal() instanceof Jwt) {
-                        return ((Jwt) authentication.getPrincipal()).getTokenValue();
+        Flux<CreditApplication> creditApplicationsFlux = super.findAll();
+
+        Mono<Map<String, UserInfoDTO>> usersMapMono = authClient.listAllUsersFromContextAsMap();
+
+        return usersMapMono.flatMapMany(usersMap ->
+                creditApplicationsFlux.map(creditApp -> {
+                    UserInfoDTO user = usersMap.get(creditApp.getEmail());
+                    if (user == null) {
+                        return creditApp;
                     }
-                    return "";
-                })
-                .flatMapMany(jwtToken -> {
-                    logger.info("JWT extraído del contexto de seguridad: {}", jwtToken);
-
-                    // Se obtienen las solicitudes de crédito de la base de datos local
-                    Flux<CreditApplication> creditApplicationsFlux = super.findAll();
-
-                    // Se obtiene el mapa de usuarios del microservicio de autenticación
-                    Mono<Map<String, UserListDTO>> usersMapMono = authClient.listAllUsers(jwtToken)
-                            .collect(Collectors.toMap(UserListDTO::getEmail, Function.identity()));
-
-                    // Se combinan los dos flujos para enriquecer los datos
-                    return usersMapMono.flatMapMany(usersMap ->
-                            creditApplicationsFlux.map(creditApp -> {
-                                UserListDTO userDetails = usersMap.get(creditApp.getEmail());
-                                if (userDetails != null) {
-                                    // Se crea un nuevo objeto CreditApplication con los datos enriquecidos
-                                    return new CreditApplication(
-                                            creditApp.getIdRequest(),
-                                            creditApp.getDocumentType(),
-                                            creditApp.getDocumentNumber(),
-                                            creditApp.getCreditAmount(),
-                                            creditApp.getCreditTime(),
-                                            creditApp.getEmail(),
-                                            creditApp.getIdState(),
-                                            creditApp.getIdLoanType()
-                                    );
-                                }
-                                return creditApp; // Se devuelve el objeto original si no se encuentran detalles del usuario
-                            })
+                    // Si el handler espera CreditApplicationEnrichedDTO, ajustar en capa superior.
+                    return new CreditApplication(
+                            creditApp.getIdRequest(),
+                            creditApp.getDocumentType(),
+                            creditApp.getDocumentNumber(),
+                            creditApp.getCreditAmount(),
+                            creditApp.getCreditTime(),
+                            creditApp.getEmail(),
+                            creditApp.getIdState(),
+                            creditApp.getIdLoanType()
                     );
-                });
+                })
+        );
+    }
+
+    public Flux<CreditApplicationEnrichedDTO> listAllEnrichedDTO() {
+        Flux<CreditApplication> creditApplicationsFlux = super.findAll();
+
+        Mono<Map<String, UserInfoDTO>> usersMapMono = authClient.listAllUsersFromContextAsMap();
+
+        Mono<Map<Short, String>> statesMapMono = databaseClient.sql("SELECT id_state, name_state FROM states")
+                .map((row, meta) -> Tuples.of(((Number) row.get("id_state")).shortValue(), (String) row.get("name_state")))
+                .all()
+                .collectMap(t -> t.getT1(), t -> t.getT2());
+
+        Mono<Map<Short, String>> loanTypesMapMono = databaseClient.sql("SELECT id_loan_type, name_loan FROM loan_type")
+                .map((row, meta) -> Tuples.of(((Number) row.get("id_loan_type")).shortValue(), (String) row.get("name_loan")))
+                .all()
+                .collectMap(t -> t.getT1(), t -> t.getT2());
+
+        Mono<Tuple3<Map<String, UserInfoDTO>, Map<Short, String>, Map<Short, String>>> combined =
+                Mono.zip(usersMapMono, statesMapMono, loanTypesMapMono);
+
+        return combined.flatMapMany(tuple -> {
+            Map<String, UserInfoDTO> usersMap = tuple.getT1();
+            Map<Short, String> statesMap = tuple.getT2();
+            Map<Short, String> loansMap = tuple.getT3();
+
+            return creditApplicationsFlux.map(creditApp -> {
+                String normalizedEmail = creditApp.getEmail() == null ? "" : creditApp.getEmail().trim().toLowerCase();
+                UserInfoDTO user = usersMap.get(normalizedEmail);
+                if (user == null) {
+                    logger.trace("Usuario no encontrado para email en solicitudes: {}", normalizedEmail);
+                }
+                String nameState = statesMap.get(creditApp.getIdState());
+                String nameLoan = loansMap.get(creditApp.getIdLoanType());
+
+                return new CreditApplicationEnrichedDTO(
+                        creditApp.getIdRequest(),
+                        creditApp.getDocumentType(),
+                        creditApp.getDocumentNumber(),
+                        creditApp.getCreditAmount(),
+                        creditApp.getCreditTime(),
+                        creditApp.getEmail(),
+                        nameState,
+                        nameLoan,
+                        user != null ? user.getFirstName() : null,
+                        user != null ? user.getBaseSalary() : null
+                );
+            });
+        });
     }
 
     @PostConstruct

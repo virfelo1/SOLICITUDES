@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class CreditApplicationResponseDTO {
+public class CreditApplicationEnrichedDTO {
     private Integer idRequest;
     private String documentType;
     private String documentNumber;

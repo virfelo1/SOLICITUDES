@@ -43,10 +43,10 @@ public class CreditApplicationUseCase {
                 });
     }
 
-    public Flux<CreditApplication> listRequest() {
+    /*public Flux<CreditApplication> listRequest() {
         // Caso de uso para obtener el listado completo de solicitudes desde el repositorio
         return creditApplicationRepository.listRequest();
-    }
+    }*/
 
     public Flux<CreditApplication> listAllEnriched() {
         // Caso de uso para obtener el listado completo de solicitudes desde el repositorio
