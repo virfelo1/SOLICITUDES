@@ -1,4 +1,4 @@
-package co.com.projectve.shared.clients;
+package co.com.projectve.r2dbc.clients;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
