@@ -15,7 +15,7 @@ spring:
 
 adapters:
   r2dbc:
-    host: ${ADAPTERS_R2DBC_HOST:postgres}
+    host: ${ADAPTERS_R2DBC_HOST:localhost}
     port: ${ADAPTERS_R2DBC_PORT:5432}
     database: ${ADAPTERS_R2DBC_DATABASE:postgres}
     schema: ${ADAPTERS_R2DBC_SCHEMA:public}
@@ -27,8 +27,8 @@ adapters:
     #schema: public # You may need to adjust this value if your schema is different
     #username: postgres
     #password: 123456
-  auth-service:
-    base-url: ${AUTH_SERVICE_URL:http://localhost:8080}  # usa variable de entorno o localhost por defecto
+  #auth-service:
+    #base-url: ${AUTH_SERVICE_URL:http://localhost:8080}  # usa variable de entorno o localhost por defecto
 
 management:
   endpoints:
@@ -50,5 +50,5 @@ security:
 
 auth:
   service:
-    base-url: http://autenticacion:8080
-    #base-url: http://localhost:8080 # para trabajar en local
+    #base-url: http://autenticacion:8080
+    base-url: http://localhost:8080 # para trabajar en local

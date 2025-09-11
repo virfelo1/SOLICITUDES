@@ -40,17 +40,13 @@ public class SecurityConfig {
         return http
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .cors(cors -> {})
-                //.httpBasic(httpBasic -> httpBasic.disable())
-                //.formLogin(formLogin -> formLogin.disable())
-                .authorizeExchange(authorize -> authorize
-                        .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
-                        .pathMatchers(HttpMethod.POST, "/api/v1/solicitud").hasAnyRole("ADMIN", "ASESOR")
-                        .pathMatchers(HttpMethod.GET, "/api/v1/solicitud").hasAnyRole("ADMIN", "ASESOR")
-
-                        .anyExchange().authenticated()
-                )
                 .httpBasic(httpBasic -> httpBasic.disable())
                 .formLogin(formLogin -> formLogin.disable())
+                .authorizeExchange(authorize -> authorize
+                        .pathMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/webjars/**").permitAll()
+                        .pathMatchers(HttpMethod.GET, "/api/v1/solicitud").hasAnyRole("ADMIN", "ASESOR")
+                        .anyExchange().authenticated()
+                )
                 .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
                 .build();
     }
@@ -81,10 +77,9 @@ public class SecurityConfig {
                         return new SimpleGrantedAuthority(normalized);
                     })
                     .collect(Collectors.toList());
-            logger.info("Autoridades extraidas del JWT: {}", granted);
+            logger.info("Autoridades extraídas del JWT: {}", granted);
             return granted;
         });
         return new ReactiveJwtAuthenticationConverterAdapter(jwtAuthenticationConverter);
     }
 }
-

@@ -3,8 +3,6 @@ package co.com.projectve.api;
 import co.com.projectve.api.dto.CreditApplicationDTO;
 import co.com.projectve.model.creditapplication.CreditApplication;
 import co.com.projectve.r2dbc.dto.CreditApplicationListViewDTO;
-import co.com.projectve.shared.dto.PageResponse;
-import co.com.projectve.shared.dto.CreditApplicationEnrichedDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -58,13 +56,11 @@ public class RouterRest {
                     beanMethod = "listRequest",
                     operation = @Operation(
                             summary = "Lista todas las solicitudes de crédito",
-                            description = "Retorna el listado paginado con información enriquecida (estado y tipo de préstamo).",
+                            description = "Retorna el listado con información enriquecida (estado y tipo de préstamo).",
                             operationId = "listRequest",
-                            parameters = {
-                            },
                             responses = {
                                     @ApiResponse(responseCode = "200", description = "Listado obtenido exitosamente",
-                                            content = @Content(schema = @Schema(implementation = PageResponse.class))
+                                            content = @Content(schema = @Schema(implementation = CreditApplicationListViewDTO.class))
                                     ),
                                     @ApiResponse(responseCode = "500", description = "Error interno del servidor")
                             }

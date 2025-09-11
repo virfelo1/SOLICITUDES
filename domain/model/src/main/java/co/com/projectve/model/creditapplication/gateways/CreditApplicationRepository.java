@@ -6,5 +6,6 @@ import reactor.core.publisher.Mono;
 
 public interface CreditApplicationRepository {
     Mono<CreditApplication>saveRequest(CreditApplication creditApplication);
-    //Flux<CreditApplication> listAllEnriched();// contrato creado para arreglasr el Usecase
+    //Flux<CreditApplication> listRequest();
+    Flux<CreditApplication> listAllEnriched();// contrato creado para arreglasr el Usecase
 }

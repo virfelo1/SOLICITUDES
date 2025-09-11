@@ -6,7 +6,6 @@ import co.com.projectve.model.creditapplication.CreditApplication;
 import co.com.projectve.r2dbc.MyReactiveRepositoryAdapter;
 import co.com.projectve.r2dbc.dto.CreditApplicationListViewDTO;
 import co.com.projectve.shared.dto.UserInfoDTO;
-import co.com.projectve.shared.dto.PageResponse;
 import co.com.projectve.usecase.creditapplication.CreditApplicationUseCase;
 import co.com.projectve.shared.dto.CreditApplicationEnrichedDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -96,20 +95,17 @@ public class Handler {
     )
     public Mono<ServerResponse> listRequest(ServerRequest serverRequest){ //aqui esta el metodo para capturar la informacion que va al listado
         logger.trace("[listRequest] Recibida solicitud GET /api/v1/solicitud");
-        logger.info("Iniciando listado de solicitudes de credito");
-        int page = serverRequest.queryParam("page").map(Integer::parseInt).orElse(0);
-        int size = serverRequest.queryParam("size").map(Integer::parseInt).orElse(10);
-        String nameState = serverRequest.queryParam("nameState").orElse(null);
-        String nameLoan = serverRequest.queryParam("nameLoan").orElse(null);
-
-        var pageMono = myReactiveRepositoryAdapter.listAllEnrichedDTOPage(page, size, nameState, nameLoan)
-                .doFirst(() -> logger.trace("[listRequest] Preparando flujo de datos paginados"))
-                .doOnSubscribe(s -> logger.debug("Suscrito al flujo de listado paginado de solicitudes"))
+        logger.info("Iniciando listado de solicitudes de crédito");
+        var list = myReactiveRepositoryAdapter.listAllEnrichedDTO()
+                .doFirst(() -> logger.trace("[listRequest] Preparando flujo de datos"))
+                .doOnSubscribe(s -> logger.debug("Suscrito al flujo de listado de solicitudes"))
+                .doOnNext(item -> logger.debug("Solicitud listada: {}", item))
                 .doOnError(err -> logger.error("Error durante el listado de solicitudes: {}", err.getMessage(), err))
+                .doOnComplete(() -> logger.info("Listado de solicitudes completado"))
                 .doFinally(signal -> logger.trace("[listRequest] Flujo finalizado con señal: {}", signal));
 
         logger.trace("[listRequest] Enviando respuesta 200 OK");
-        return ServerResponse.ok().body(pageMono, PageResponse.class);
+        return ServerResponse.ok().body(list, UserInfoDTO.class);
     }
 
 
