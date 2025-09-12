@@ -37,10 +37,11 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
                     .collect(Collectors.toMap(
                             violation -> violation.getPropertyPath().toString(),
                             ConstraintViolation::getMessage,
-                            (existingMessage, newMessage) -> existingMessage // <-- This is the key change
+                            (existingMessage, newMessage) -> existingMessage
                     ));
         } else if (throwable instanceof BusinessException) {
-            status = HttpStatus.BAD_REQUEST;
+            // Cambiado de BAD_REQUEST a NOT_FOUND para reflejar mejor el error de "no encontrado".
+            status = HttpStatus.NOT_FOUND;
             errorBody = Map.of("error", throwable.getMessage());
         } else if (throwable instanceof TechnicalException) {
             status = HttpStatus.SERVICE_UNAVAILABLE;

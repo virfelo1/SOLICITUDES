@@ -33,9 +33,9 @@ public class CreditApplicationEntity {
     @Column("email")
     private String email;
 
-    @Column("id_state") //esta asociado a la tabla: "loan_type"
+    @Column("id_state") //esta asociado a la tabla: "states"
     private Short idState;
 
-    @Column("id_loan_type") //esta asociado a la tabla: "states"
+    @Column("id_loan_type") //esta asociado a la tabla: "loan_type"
     private Short idLoanType;
 }

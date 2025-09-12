@@ -1,6 +1,7 @@
 package co.com.projectve.api;
 
 import co.com.projectve.api.dto.CreditApplicationDTO;
+import co.com.projectve.api.dto.UpdateStateDTO;
 import co.com.projectve.api.mapper.CreditApplicationDTOMapper;
 import co.com.projectve.model.creditapplication.CreditApplication;
 import co.com.projectve.r2dbc.MyReactiveRepositoryAdapter;
@@ -19,7 +20,9 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.reactive.function.server.ServerRequest;
 import org.springframework.web.reactive.function.server.ServerResponse;
 import reactor.core.publisher.Mono;
@@ -108,6 +111,37 @@ public class Handler {
         return ServerResponse.ok().body(list, UserInfoDTO.class);
     }
 
+    @Operation(
+            summary = "Actualiza el estado de una solicitud",
+            description = "Permite a un 'Asesor' cambiar el estado de una solicitud a 'Aprobado' o 'Rechazado'.",
+            tags = {"Solicitudes"},
+            requestBody = @RequestBody(
+                    content = @Content(schema = @Schema(implementation = UpdateStateDTO.class))),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Estado de solicitud actualizado exitosamente",
+                            content = @Content(schema = @Schema(implementation = CreditApplication.class))),
+                    @ApiResponse(responseCode = "400", description = "Error de validación en los datos de entrada o solicitud no encontrada",
+                            content = @Content(schema = @Schema(implementation = Map.class, example = "{\"error\":\"Solicitud con email 'juan.garcia@email.com' no encontrada.\"}"))),
+                    @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+            })
+    public Mono<ServerResponse> updateState(ServerRequest serverRequest){
+        logger.trace("[updateState] Recibida solicitud PUT /api/v1/solicitud");
+        return serverRequest.bodyToMono(UpdateStateDTO.class)
+                .flatMap(dto -> {
+                    logger.trace("[updateState] Iniciando validación de DTO");
+                    Set<ConstraintViolation<UpdateStateDTO>> violations = validator.validate(dto);
+                    if (!violations.isEmpty()) {
+                        logger.error("[updateState] DTO inválido: {} violaciones", violations.size());
+                        throw new ConstraintViolationException(violations);
+                    }
+                    logger.trace("[updateState] DTO válido. Llamando a la lógica en el caso de uso para actualizar estado y notificar.");
+                    return creditApplicationUseCase.updateStateAndNotify(dto.email(), dto.state());
+                })
+                .flatMap(response -> {
+                    logger.trace("[updateState] Enviando respuesta 200 OK con la solicitud actualizada.");
+                    return ServerResponse.ok().bodyValue(response);
+                });
+    }
 
 }
 

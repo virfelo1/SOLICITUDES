@@ -18,19 +18,18 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import co.com.projectve.shared.dto.CreditApplicationEnrichedDTO;
 import co.com.projectve.shared.dto.UserInfoDTO;
-import reactor.util.function.Tuple3;
 import reactor.util.function.Tuple4;
 import reactor.util.function.Tuples;
 
 
 @Repository
 public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
-        CreditApplication/* change for domain model */,
-        CreditApplicationEntity/* change for adapter model */,
+        CreditApplication,
+        CreditApplicationEntity,
         Integer,
-        MyReactiveRepository
-        >
+        MyReactiveRepository>
         implements CreditApplicationRepository {
+
     private final TransactionalOperator transactionalOperator;
     private final DatabaseClient databaseClient;
     private final AuthClient authClient;
@@ -54,9 +53,7 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
         logger.debug("Datos completos de la solicitud a persistir: {}", creditApplication);
 
         return super.save(creditApplication)
-                .doOnSubscribe(subscription -> {
-                    logger.trace("Operación de guardado suscrita. Iniciando persistencia en base de datos");
-                })
+                .doOnSubscribe(subscription -> logger.trace("Operación de guardado suscrita. Iniciando persistencia en base de datos"))
                 .doOnNext(savedCreditApplication -> {
                     logger.info("CreditApplication guardado exitosamente con ID: {}", savedCreditApplication.getIdRequest());
                     logger.debug("Datos de la entidad guardada: {}", savedCreditApplication);
@@ -66,21 +63,13 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                     logger.trace("Detalles del error de persistencia: tipo={}, causa={}",
                             error.getClass().getSimpleName(), error.getCause() != null ? error.getCause().getMessage() : "N/A");
                 })
-                .doFinally(signalType -> {
-                    logger.trace("Solicitud de guardado completada. Señal: {}, ID de la solicitud: {}",
-                            signalType, creditApplication.getIdRequest());
-                });
+                .doFinally(signalType -> logger.trace("Solicitud de guardado completada. Señal: {}, ID de la solicitud: {}",
+                        signalType, creditApplication.getIdRequest()));
     }
-
-    /*@Override
-    public Flux<CreditApplication> listRequest() {
-        return super.findAll();
-    }*/
 
     @Override
     public Flux<CreditApplication> listAllEnriched() {
         Flux<CreditApplication> creditApplicationsFlux = super.findAll();
-
         Mono<Map<String, UserInfoDTO>> usersMapMono = authClient.listAllUsersFromContextAsMap();
 
         return usersMapMono.flatMapMany(usersMap ->
@@ -89,7 +78,6 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                     if (user == null) {
                         return creditApp;
                     }
-                    // Si el handler espera CreditApplicationEnrichedDTO, ajustar en capa superior.
                     return new CreditApplication(
                             creditApp.getIdRequest(),
                             creditApp.getDocumentType(),
@@ -100,25 +88,49 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                             creditApp.getIdState(),
                             creditApp.getIdLoanType()
                     );
+                }));
+    }
+
+    @Override
+    public Mono<CreditApplication> updateState(CreditApplication creditApplication) {
+        logger.trace("[updateState] Iniciando actualización de estado para solicitud con email: {} a estado ID: {}", creditApplication.getEmail(), creditApplication.getIdState());
+        return super.repository.findByEmail(creditApplication.getEmail())
+                .flatMap(entity -> {
+                    entity.setIdState(creditApplication.getIdState());
+                    logger.debug("[updateState] Entidad encontrada. Preparando para guardar la actualización de estado.");
+                    return super.repository.save(entity);
                 })
-        );
+                .map(updatedEntity -> {
+                    logger.info("[updateState] Estado de solicitud para email {} actualizado exitosamente.", updatedEntity.getEmail());
+                    return mapper.map(updatedEntity, CreditApplication.class);
+                });
+    }
+
+    @Override
+    public Mono<CreditApplication> findByEmail(String email) {
+        logger.trace("[findByEmail] Buscando solicitud por email: {}", email);
+        return super.repository.findByEmail(email)
+                .map(entity -> {
+                    logger.debug("[findByEmail] Solicitud encontrada para email: {}", email);
+                    return mapper.map(entity, CreditApplication.class);
+                })
+                .switchIfEmpty(Mono.defer(() -> {
+                    logger.warn("[findByEmail] No se encontró solicitud para email: {}", email);
+                    return Mono.empty();
+                }));
     }
 
     public Flux<CreditApplicationEnrichedDTO> listAllEnrichedDTO() {
         Flux<CreditApplication> creditApplicationsFlux = super.findAll();
-
         Mono<Map<String, UserInfoDTO>> usersMapMono = authClient.listAllUsersFromContextAsMap();
-
         Mono<Map<Short, String>> statesMapMono = databaseClient.sql("SELECT id_state, name_state FROM states")
                 .map((row, meta) -> Tuples.of(((Number) row.get("id_state")).shortValue(), (String) row.get("name_state")))
                 .all()
                 .collectMap(t -> t.getT1(), t -> t.getT2());
-
         Mono<Map<Short, String>> loanTypeNameMapMono = databaseClient.sql("SELECT id_loan_type, name_loan FROM loan_type")
                 .map((row, meta) -> Tuples.of(((Number) row.get("id_loan_type")).shortValue(), (String) row.get("name_loan")))
                 .all()
                 .collectMap(t -> t.getT1(), t -> t.getT2());
-
         Mono<Map<Short, Double>> loanTypeRateMapMono = databaseClient.sql("SELECT id_loan_type, interest_rate FROM loan_type")
                 .map((row, meta) -> Tuples.of(((Number) row.get("id_loan_type")).shortValue(), ((Number) row.get("interest_rate")).doubleValue()))
                 .all()
@@ -147,9 +159,7 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                 double annualRate = interestRate != null ? interestRate : 0d;
                 double monthlyRequestAmount = 0d;
 
-// Convertir la tasa anual que viene en porcentaje (ej: 12.0) a decimal (0.12)
                 annualRate = annualRate / 100.0;
-
                 if (annualRate > 0d && periods > 0) {
                     double monthlyRate = annualRate / 12.0;
                     monthlyRequestAmount = (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -periods));

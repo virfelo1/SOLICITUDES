@@ -7,29 +7,15 @@ spring:
     add-properties: false
   sql:
     init:
-      mode: always
-  #r2dbc:
-    #url: r2dbc:postgresql://postgres:5432/postgres # Usar el nombre del servicio 'postgres'
-    #username: postgres
-    #password: 123456
-
+      mode: "always"
 adapters:
   r2dbc:
-    host: ${ADAPTERS_R2DBC_HOST:localhost}
-    port: ${ADAPTERS_R2DBC_PORT:5432}
-    database: ${ADAPTERS_R2DBC_DATABASE:postgres}
-    schema: ${ADAPTERS_R2DBC_SCHEMA:public}
-    username: ${ADAPTERS_R2DBC_USERNAME:postgres}
-    password: ${ADAPTERS_R2DBC_PASSWORD:123456}
-    #host: postgres
-    #port: 5432
-    #database: postgres
-    #schema: public # You may need to adjust this value if your schema is different
-    #username: postgres
-    #password: 123456
-  #auth-service:
-    #base-url: ${AUTH_SERVICE_URL:http://localhost:8080}  # usa variable de entorno o localhost por defecto
-
+    host: "${ADAPTERS_R2DBC_HOST:localhost}"
+    port: "${ADAPTERS_R2DBC_PORT:5432}"
+    database: "${ADAPTERS_R2DBC_DATABASE:postgres}"
+    schema: "${ADAPTERS_R2DBC_SCHEMA:public}"
+    username: "${ADAPTERS_R2DBC_USERNAME:postgres}"
+    password: "${ADAPTERS_R2DBC_PASSWORD:123456}"
 management:
   endpoints:
     web:
@@ -41,14 +27,24 @@ management:
         enabled: true
 cors:
   allowed-origins: "http://localhost:4200,http://localhost:8080"
-
 security:
   jwt:
-    #secret: ${SECURITY_JWT_SECRET}
     secret: "1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p7q8r9s0t1u2v3w4x5y6z7a8b9c0d1e2f"
-
-
 auth:
   service:
-    #base-url: http://autenticacion:8080
-    base-url: http://localhost:8080 # para trabajar en local
+    base-url: "http://localhost:8080"
+adapter:
+  sqs:
+    region: us-east-1
+    queueUrl: http://localhost:4566/000000000000/sample
+    endpoint: http://localhost:4566 # For localstack only
+
+# Configuración de OpenAPI/Swagger
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+    tagsSorter: alpha
+  show-actuator: true

@@ -1,6 +1,7 @@
 package co.com.projectve.api;
 
 import co.com.projectve.api.dto.CreditApplicationDTO;
+import co.com.projectve.api.dto.UpdateStateDTO;
 import co.com.projectve.model.creditapplication.CreditApplication;
 import co.com.projectve.r2dbc.dto.CreditApplicationListViewDTO;
 import io.swagger.v3.oas.annotations.Operation;
@@ -17,8 +18,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
-import static org.springframework.web.reactive.function.server.RequestPredicates.POST;
-import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
+import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
 @Configuration
@@ -65,11 +65,35 @@ public class RouterRest {
                                     @ApiResponse(responseCode = "500", description = "Error interno del servidor")
                             }
                     )
+            ),
+            @RouterOperation(
+                    path = "/api/v1/solicitud",
+                    method = RequestMethod.PUT,
+                    beanClass = Handler.class,
+                    beanMethod = "updateState",
+                    operation = @Operation(
+                            summary = "Actualiza el estado de una solicitud",
+                            description = "Permite a un 'Asesor' cambiar el estado de una solicitud a 'Aprobado' o 'Rechazado'.",
+                            operationId = "updateState",
+                            requestBody = @RequestBody(
+                                    content = @Content(schema = @Schema(implementation = UpdateStateDTO.class))
+                            ),
+                            responses = {
+                                    @ApiResponse(responseCode = "200", description = "Estado de solicitud actualizado exitosamente",
+                                            content = @Content(schema = @Schema(implementation = CreditApplication.class))
+                                    ),
+                                    @ApiResponse(responseCode = "400", description = "Error de validación en los datos de entrada o solicitud no encontrada",
+                                            content = @Content(schema = @Schema(implementation = String.class, example = "{\"error\":\"Solicitud con email 'juan.garcia@email.com' no encontrada.\"}"))
+                                    ),
+                                    @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+                            }
+                    )
             )
     })
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
         return route(POST("/api/v1/solicitud"), handler::saveRequestApi)
-                .andRoute(GET("/api/v1/solicitud"), handler::listRequest); //este es el endpoint para el listado de solicitudes
+                .andRoute(GET("/api/v1/solicitud"), handler::listRequest) //este es el endpoint para el listado de solicitudes
+                .andRoute(PUT("/api/v1/solicitud"), handler::updateState);
         // .andRoute(POST("/api/usecase/otherpath"), handler::listenPOSTUseCase)
     }
 }
