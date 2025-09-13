@@ -7,6 +7,8 @@ import co.com.projectve.r2dbc.mapper.CreditApplicationEntityMapper;
 import co.com.projectve.r2dbc.helper.ReactiveAdapterOperations;
 import co.com.projectve.shared.clients.AuthClient;
 import java.util.Map;
+
+import co.com.projectve.shared.dto.*;
 import jakarta.annotation.PostConstruct;
 import org.reactivecommons.utils.ObjectMapper;
 import org.slf4j.Logger;
@@ -16,9 +18,7 @@ import org.springframework.transaction.reactive.TransactionalOperator;
 import org.springframework.r2dbc.core.DatabaseClient;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import co.com.projectve.shared.dto.CreditApplicationEnrichedDTO;
-import co.com.projectve.shared.dto.UserInfoDTO;
-import reactor.util.function.Tuple4;
+import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
 
@@ -93,8 +93,12 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
 
     @Override
     public Mono<CreditApplication> updateState(CreditApplication creditApplication) {
-        logger.trace("[updateState] Iniciando actualización de estado para solicitud con email: {} a estado ID: {}", creditApplication.getEmail(), creditApplication.getIdState());
-        return super.repository.findByEmail(creditApplication.getEmail())
+        logger.trace("[updateState] Iniciando actualización de estado para solicitud con email: {} y ID: {} al estado ID: {}",
+                creditApplication.getEmail(),
+                creditApplication.getIdRequest(),
+                creditApplication.getIdState());
+
+        return super.repository.findByEmailAndIdRequest(creditApplication.getEmail(), creditApplication.getIdRequest())
                 .flatMap(entity -> {
                     entity.setIdState(creditApplication.getIdState());
                     logger.debug("[updateState] Entidad encontrada. Preparando para guardar la actualización de estado.");
@@ -107,82 +111,132 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
     }
 
     @Override
-    public Mono<CreditApplication> findByEmail(String email) {
-        logger.trace("[findByEmail] Buscando solicitud por email: {}", email);
-        return super.repository.findByEmail(email)
+    public Mono<CreditApplication> findByEmailAndIdRequest(String email, Integer idRequest) {
+        logger.trace("[findByEmailAndIdRequest] Buscando solicitud por email {} y idRequest {}", email, idRequest);
+
+        return super.repository.findByEmailAndIdRequest(email, idRequest)
                 .map(entity -> {
-                    logger.debug("[findByEmail] Solicitud encontrada para email: {}", email);
+                    logger.debug("[findByEmailAndIdRequest] Solicitud encontrada para email {} y idRequest {}", email, idRequest);
                     return mapper.map(entity, CreditApplication.class);
                 })
                 .switchIfEmpty(Mono.defer(() -> {
-                    logger.warn("[findByEmail] No se encontró solicitud para email: {}", email);
+                    logger.warn("[findByEmailAndIdRequest] No se encontró solicitud para email {} y idRequest {}", email, idRequest);
                     return Mono.empty();
                 }));
     }
 
-    public Flux<CreditApplicationEnrichedDTO> listAllEnrichedDTO() {
-        Flux<CreditApplication> creditApplicationsFlux = super.findAll();
-        Mono<Map<String, UserInfoDTO>> usersMapMono = authClient.listAllUsersFromContextAsMap();
-        Mono<Map<Short, String>> statesMapMono = databaseClient.sql("SELECT id_state, name_state FROM states")
-                .map((row, meta) -> Tuples.of(((Number) row.get("id_state")).shortValue(), (String) row.get("name_state")))
-                .all()
-                .collectMap(t -> t.getT1(), t -> t.getT2());
-        Mono<Map<Short, String>> loanTypeNameMapMono = databaseClient.sql("SELECT id_loan_type, name_loan FROM loan_type")
-                .map((row, meta) -> Tuples.of(((Number) row.get("id_loan_type")).shortValue(), (String) row.get("name_loan")))
-                .all()
-                .collectMap(t -> t.getT1(), t -> t.getT2());
-        Mono<Map<Short, Double>> loanTypeRateMapMono = databaseClient.sql("SELECT id_loan_type, interest_rate FROM loan_type")
-                .map((row, meta) -> Tuples.of(((Number) row.get("id_loan_type")).shortValue(), ((Number) row.get("interest_rate")).doubleValue()))
-                .all()
-                .collectMap(t -> t.getT1(), t -> t.getT2());
+    private Flux<CreditApplicationEnrichedDTO> getFilteredEnrichedDTO(String nameState, String nameLoan) {
+        Flux<CreditApplication> baseFlux = super.findAll();
 
-        Mono<Tuple4<Map<String, UserInfoDTO>, Map<Short, String>, Map<Short, String>, Map<Short, Double>>> combined =
-                Mono.zip(usersMapMono, statesMapMono, loanTypeNameMapMono, loanTypeRateMapMono);
-
-        return combined.flatMapMany(tuple -> {
+        return Mono.zip(
+                authClient.listAllUsersFromContextAsMap(),
+                databaseClient.sql("SELECT id_state, name_state FROM states").map((row, meta) -> Tuples.of(((Number) row.get("id_state")).shortValue(), (String) row.get("name_state"))).all().collectMap(Tuple2::getT1, Tuple2::getT2),
+                databaseClient.sql("SELECT id_loan_type, name_loan FROM loan_type").map((row, meta) -> Tuples.of(((Number) row.get("id_loan_type")).shortValue(), (String) row.get("name_loan"))).all().collectMap(Tuple2::getT1, Tuple2::getT2),
+                databaseClient.sql("SELECT id_loan_type, interest_rate FROM loan_type").map((row, meta) -> Tuples.of(((Number) row.get("id_loan_type")).shortValue(), ((Number) row.get("interest_rate")).doubleValue())).all().collectMap(Tuple2::getT1, Tuple2::getT2)
+        ).flatMapMany(tuple -> {
             Map<String, UserInfoDTO> usersMap = tuple.getT1();
             Map<Short, String> statesMap = tuple.getT2();
             Map<Short, String> loansMap = tuple.getT3();
             Map<Short, Double> ratesMap = tuple.getT4();
 
-            return creditApplicationsFlux.map(creditApp -> {
-                String normalizedEmail = creditApp.getEmail() == null ? "" : creditApp.getEmail().trim().toLowerCase();
-                UserInfoDTO user = usersMap.get(normalizedEmail);
-                if (user == null) {
-                    logger.trace("Usuario no encontrado para email en solicitudes: {}", normalizedEmail);
-                }
-                String nameState = statesMap.get(creditApp.getIdState());
-                String nameLoan = loansMap.get(creditApp.getIdLoanType());
-                Double interestRate = ratesMap.get(creditApp.getIdLoanType());
-                double principal = creditApp.getCreditAmount() != null ? creditApp.getCreditAmount().doubleValue() : 0d;
-                int periods = creditApp.getCreditTime() != null ? creditApp.getCreditTime() : 0;
-                double annualRate = interestRate != null ? interestRate : 0d;
-                double monthlyRequestAmount = 0d;
+            return baseFlux
+                    .filter(creditApp -> {
+                        String currentState = statesMap.get(creditApp.getIdState());
+                        String currentLoan = loansMap.get(creditApp.getIdLoanType());
+                        boolean stateMatches = nameState == null || (currentState != null && currentState.equalsIgnoreCase(nameState));
+                        boolean loanMatches = nameLoan == null || (currentLoan != null && currentLoan.equalsIgnoreCase(nameLoan));
+                        return stateMatches && loanMatches;
+                    })
+                    .map(creditApp -> {
+                        String normalizedEmail = creditApp.getEmail() == null ? "" : creditApp.getEmail().trim().toLowerCase();
+                        UserInfoDTO user = usersMap.get(normalizedEmail);
+                        if (user == null) {
+                            logger.trace("Usuario no encontrado para email en solicitudes: {}", normalizedEmail);
+                        }
+                        String stateName = statesMap.get(creditApp.getIdState());
+                        String loanName = loansMap.get(creditApp.getIdLoanType());
+                        Double interestRate = ratesMap.get(creditApp.getIdLoanType());
+                        double principal = creditApp.getCreditAmount() != null ? creditApp.getCreditAmount().doubleValue() : 0d;
+                        int periods = creditApp.getCreditTime() != null ? creditApp.getCreditTime() : 0;
+                        double annualRate = interestRate != null ? interestRate : 0d;
+                        double monthlyRequestAmount = 0d;
 
-                annualRate = annualRate / 100.0;
-                if (annualRate > 0d && periods > 0) {
-                    double monthlyRate = annualRate / 12.0;
-                    monthlyRequestAmount = (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -periods));
-                } else if (periods > 0) {
-                    monthlyRequestAmount = principal / periods;
-                }
+                        annualRate = annualRate / 100.0;
 
-                return new CreditApplicationEnrichedDTO(
-                        creditApp.getIdRequest(),
-                        creditApp.getDocumentType(),
-                        creditApp.getDocumentNumber(),
-                        creditApp.getCreditAmount(),
-                        creditApp.getCreditTime(),
-                        creditApp.getEmail(),
-                        nameState,
-                        nameLoan,
-                        interestRate,
-                        user != null ? user.getFirstName() : null,
-                        user != null ? user.getBaseSalary() : null,
-                        monthlyRequestAmount
-                );
-            });
+                        if (annualRate > 0d && periods > 0) {
+                            double monthlyRate = annualRate / 12.0;
+                            monthlyRequestAmount = (principal * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -periods));
+                        } else if (periods > 0) {
+                            monthlyRequestAmount = principal / periods;
+                        }
+
+                        return new CreditApplicationEnrichedDTO(
+                                creditApp.getIdRequest(),
+                                creditApp.getDocumentType(),
+                                creditApp.getDocumentNumber(),
+                                creditApp.getCreditAmount(),
+                                creditApp.getCreditTime(),
+                                creditApp.getEmail(),
+                                stateName,
+                                loanName,
+                                interestRate,
+                                user != null ? user.getFirstName() : null,
+                                user != null ? user.getBaseSalary() : null,
+                                monthlyRequestAmount
+                        );
+                    });
         });
+    }
+
+    public Mono<PageResponse<CreditApplicationEnrichedDTO>> listAllEnrichedDTOPage(int page, int size, String nameState, String nameLoan) {
+        int safePage = Math.max(page, 0);
+        int safeSize = size <= 0 ? 10 : size;
+
+        Flux<CreditApplicationEnrichedDTO> full = getFilteredEnrichedDTO(nameState, nameLoan);
+
+        Mono<Long> totalMono = full.count();
+
+        Mono<java.util.List<CreditApplicationEnrichedDTO>> contentMono = full
+                .skip((long) safePage * safeSize)
+                .take(safeSize)
+                .collectList();
+
+        return Mono.zip(contentMono, totalMono)
+                .map(tuple -> {
+                    java.util.List<CreditApplicationEnrichedDTO> content = tuple.getT1();
+                    long total = tuple.getT2();
+                    int totalPages = safeSize == 0 ? 0 : (int) Math.ceil((double) total / (double) safeSize);
+                    boolean isFirst = safePage == 0;
+                    boolean isLast = totalPages == 0 ? true : (safePage >= totalPages - 1);
+
+                    PageableInfo pageable = PageableInfo.builder()
+                            .pageNumber(safePage)
+                            .pageSize(safeSize)
+                            .offset((long) safePage * safeSize)
+                            .paged(true)
+                            .unpaged(false)
+                            .build();
+
+                    SortInfo sort = SortInfo.builder()
+                            .empty(true)
+                            .sorted(false)
+                            .unsorted(true)
+                            .build();
+
+                    return PageResponse.<CreditApplicationEnrichedDTO>builder()
+                            .content(content)
+                            .pageable(pageable)
+                            .last(isLast)
+                            .totalPages(totalPages)
+                            .totalElements(total)
+                            .size(safeSize)
+                            .number(safePage)
+                            .sort(sort)
+                            .first(isFirst)
+                            .numberOfElements(content.size())
+                            .empty(content.isEmpty())
+                            .build();
+                });
     }
 
     @PostConstruct

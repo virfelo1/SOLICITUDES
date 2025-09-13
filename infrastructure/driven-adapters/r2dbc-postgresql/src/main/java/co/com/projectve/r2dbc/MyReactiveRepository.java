@@ -8,5 +8,5 @@ import reactor.core.publisher.Mono;
 
 // TODO: This file is just an example, you should delete or modify it
 public interface MyReactiveRepository extends ReactiveCrudRepository<CreditApplicationEntity, Integer>, ReactiveQueryByExampleExecutor<CreditApplicationEntity> {
-    Mono<CreditApplicationEntity> findByEmail(String email);
+    Mono<CreditApplicationEntity> findByEmailAndIdRequest(String email, Integer idRequest);
 }

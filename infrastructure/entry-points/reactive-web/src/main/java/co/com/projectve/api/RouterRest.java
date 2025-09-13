@@ -83,7 +83,7 @@ public class RouterRest {
                                             content = @Content(schema = @Schema(implementation = CreditApplication.class))
                                     ),
                                     @ApiResponse(responseCode = "400", description = "Error de validación en los datos de entrada o solicitud no encontrada",
-                                            content = @Content(schema = @Schema(implementation = String.class, example = "{\"error\":\"Solicitud con email 'juan.garcia@email.com' no encontrada.\"}"))
+                                            content = @Content(schema = @Schema(implementation = String.class, example = "{\"error\":\"Solicitud con email 'librecarbon@gmail.com' no encontrada.\"}"))
                                     ),
                                     @ApiResponse(responseCode = "500", description = "Error interno del servidor")
                             }

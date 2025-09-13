@@ -52,37 +52,31 @@ public class CreditApplicationUseCase {
     }
 
     // Contrato para buscar una solicitud por correo electrónico
-    public Mono<CreditApplication> findByEmail(String email) {
-        logger.trace("Buscando solicitud por email en el repositorio: {}", email);
-        return creditApplicationRepository.findByEmail(email);
+    public Mono<CreditApplication> findByEmailAndIdRequest(String email, Integer idRequest) {
+        logger.trace("Buscando solicitud por email {} y idRequest {}", email, idRequest);
+        return creditApplicationRepository.findByEmailAndIdRequest(email, idRequest);
     }
 
     // Contrato para actualizar el estado de una solicitud
-    public Mono<CreditApplication> updateStateAndNotify(String email, String state) {
-        logger.trace("[updateStateAndNotify] Iniciando proceso de actualización de estado para email: {} y estado: {}", email, state);
+    public Mono<CreditApplication> updateStateAndNotify(String email, Integer idRequest, String state) {
+        logger.trace("[updateStateAndNotify] Iniciando proceso de actualización de estado para email: {}, idRequest: {} y estado: {}", email, idRequest, state);
 
-        return creditApplicationRepository.findByEmail(email)
-                .switchIfEmpty(Mono.error(new BusinessException("Solicitud con email '" + email + "' el correo no tiene asociado una solicitud de credito.")))
+        return creditApplicationRepository.findByEmailAndIdRequest(email, idRequest)
+                .switchIfEmpty(Mono.error(new BusinessException("Solicitud con email '" + email + "' y idRequest '" + idRequest + "' no encontrada.")))
                 .flatMap(creditApplication -> {
                     logger.trace("Solicitud encontrada. Actualizando estado.");
                     short newStateId = mapStateToId(state);
                     creditApplication.setIdState(newStateId);
-                    logger.debug("Estado de la solicitud para el email {} cambiado a ID: {}", email, newStateId);
+                    logger.debug("Estado de la solicitud para el email {} y idRequest {} cambiado a ID: {}", email, idRequest, newStateId);
                     return creditApplicationRepository.updateState(creditApplication);
                 })
                 .flatMap(updatedApp -> {
                     if (updatedApp.getIdState() == 2 || updatedApp.getIdState() == 3) {
                         logger.trace("El estado es Aprobado o Rechazado. Enviando mensaje de notificación.");
-
-                        // Construye el JSON dinámicamente en el caso de uso.
-                        // Esto asegura que el mensaje contenga los datos correctos para cualquier solicitud.
                         String message = String.format("{\"email\":\"%s\", \"estadoFinal\":\"%s\"}",
                                 updatedApp.getEmail(), state);
-
                         logger.debug("Mensaje a enviar: {}", message);
-
-                        return notificationService.sendNotification(message)
-                                .thenReturn(updatedApp);
+                        return notificationService.sendNotification(message).thenReturn(updatedApp);
                     } else {
                         logger.trace("El estado no requiere notificación. Proceso finalizado.");
                         return Mono.just(updatedApp);

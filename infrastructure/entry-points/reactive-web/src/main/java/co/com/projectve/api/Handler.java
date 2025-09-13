@@ -6,6 +6,7 @@ import co.com.projectve.api.mapper.CreditApplicationDTOMapper;
 import co.com.projectve.model.creditapplication.CreditApplication;
 import co.com.projectve.r2dbc.MyReactiveRepositoryAdapter;
 import co.com.projectve.r2dbc.dto.CreditApplicationListViewDTO;
+import co.com.projectve.shared.dto.PageResponse;
 import co.com.projectve.shared.dto.UserInfoDTO;
 import co.com.projectve.usecase.creditapplication.CreditApplicationUseCase;
 import co.com.projectve.shared.dto.CreditApplicationEnrichedDTO;
@@ -98,17 +99,20 @@ public class Handler {
     )
     public Mono<ServerResponse> listRequest(ServerRequest serverRequest){ //aqui esta el metodo para capturar la informacion que va al listado
         logger.trace("[listRequest] Recibida solicitud GET /api/v1/solicitud");
-        logger.info("Iniciando listado de solicitudes de crédito");
-        var list = myReactiveRepositoryAdapter.listAllEnrichedDTO()
-                .doFirst(() -> logger.trace("[listRequest] Preparando flujo de datos"))
-                .doOnSubscribe(s -> logger.debug("Suscrito al flujo de listado de solicitudes"))
-                .doOnNext(item -> logger.debug("Solicitud listada: {}", item))
+        logger.info("Iniciando listado de solicitudes de credito");
+        int page = serverRequest.queryParam("page").map(Integer::parseInt).orElse(0);
+        int size = serverRequest.queryParam("size").map(Integer::parseInt).orElse(10);
+        String nameState = serverRequest.queryParam("nameState").orElse(null);
+        String nameLoan = serverRequest.queryParam("nameLoan").orElse(null);
+
+        var pageMono = myReactiveRepositoryAdapter.listAllEnrichedDTOPage(page, size, nameState, nameLoan)
+                .doFirst(() -> logger.trace("[listRequest] Preparando flujo de datos paginados"))
+                .doOnSubscribe(s -> logger.debug("Suscrito al flujo de listado paginado de solicitudes"))
                 .doOnError(err -> logger.error("Error durante el listado de solicitudes: {}", err.getMessage(), err))
-                .doOnComplete(() -> logger.info("Listado de solicitudes completado"))
                 .doFinally(signal -> logger.trace("[listRequest] Flujo finalizado con señal: {}", signal));
 
         logger.trace("[listRequest] Enviando respuesta 200 OK");
-        return ServerResponse.ok().body(list, UserInfoDTO.class);
+        return ServerResponse.ok().body(pageMono, PageResponse.class);
     }
 
     @Operation(
@@ -126,16 +130,18 @@ public class Handler {
             })
     public Mono<ServerResponse> updateState(ServerRequest serverRequest){
         logger.trace("[updateState] Recibida solicitud PUT /api/v1/solicitud");
+
         return serverRequest.bodyToMono(UpdateStateDTO.class)
                 .flatMap(dto -> {
                     logger.trace("[updateState] Iniciando validación de DTO");
                     Set<ConstraintViolation<UpdateStateDTO>> violations = validator.validate(dto);
                     if (!violations.isEmpty()) {
                         logger.error("[updateState] DTO inválido: {} violaciones", violations.size());
-                        throw new ConstraintViolationException(violations);
+                        return Mono.error(new ConstraintViolationException(violations));
                     }
+
                     logger.trace("[updateState] DTO válido. Llamando a la lógica en el caso de uso para actualizar estado y notificar.");
-                    return creditApplicationUseCase.updateStateAndNotify(dto.email(), dto.state());
+                    return creditApplicationUseCase.updateStateAndNotify(dto.email(), dto.idRequest(), dto.state());
                 })
                 .flatMap(response -> {
                     logger.trace("[updateState] Enviando respuesta 200 OK con la solicitud actualizada.");
