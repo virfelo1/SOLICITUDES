@@ -73,7 +73,14 @@ public class CreditApplicationUseCase {
                 .flatMap(updatedApp -> {
                     if (updatedApp.getIdState() == 2 || updatedApp.getIdState() == 3) {
                         logger.trace("El estado es Aprobado o Rechazado. Enviando mensaje de notificación.");
-                        String message = "{\"email\":\"" + updatedApp.getEmail() + "\", \"estadoFinal\":\"" + state + "\"}";
+
+                        // Construye el JSON dinámicamente en el caso de uso.
+                        // Esto asegura que el mensaje contenga los datos correctos para cualquier solicitud.
+                        String message = String.format("{\"email\":\"%s\", \"estadoFinal\":\"%s\"}",
+                                updatedApp.getEmail(), state);
+
+                        logger.debug("Mensaje a enviar: {}", message);
+
                         return notificationService.sendNotification(message)
                                 .thenReturn(updatedApp);
                     } else {

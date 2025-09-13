@@ -35,9 +35,11 @@ auth:
     base-url: "http://localhost:8080"
 adapter:
   sqs:
-    region: us-east-1
-    queueUrl: http://localhost:4566/000000000000/sample
-    endpoint: http://localhost:4566 # For localstack only
+    region: us-east-2
+    queueUrl: https://sqs.us-east-2.amazonaws.com/155290702720/ColaNotificacionEmail
+    #queueUrl: https://sqs.us-east-2.amazonaws.com/155290702720/ColaNotificacionIndividual
+    # El endpoint es solo para entornos locales, no es necesario para AWS
+    # endpoint: http://localhost:4566
 
 # Configuración de OpenAPI/Swagger
 springdoc:
@@ -48,3 +50,6 @@ springdoc:
     operationsSorter: method
     tagsSorter: alpha
   show-actuator: true
+
+logging.level:
+  co.com.projectve.sqs.sender: DEBUG

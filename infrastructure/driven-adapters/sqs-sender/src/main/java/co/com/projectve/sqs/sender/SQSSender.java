@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 @Service
 @Log4j2
@@ -19,11 +18,13 @@ public class SQSSender implements NotificationService {
 
     @Override
     public Mono<Void> sendNotification(String message) {
+        log.info("Mensaje JSON recibido para enviar a SQS: {}", message);
+
         return Mono.fromCallable(() -> buildRequest(message))
                 .flatMap(request -> Mono.fromFuture(client.sendMessage(request)))
                 .doOnNext(response -> log.debug("Message sent {}", response.messageId()))
                 .doOnError(error -> log.error("Error al enviar mensaje a SQS: {}", error.getMessage()))
-                .then(); // Retorna un Mono<Void> ya que el contrato no espera un messageId
+                .then();
     }
 
     private SendMessageRequest buildRequest(String message) {
