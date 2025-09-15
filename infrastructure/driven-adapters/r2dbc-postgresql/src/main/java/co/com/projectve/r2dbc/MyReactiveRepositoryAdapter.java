@@ -20,6 +20,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
+import java.math.BigDecimal;
 
 
 @Repository
@@ -123,6 +124,55 @@ public class MyReactiveRepositoryAdapter extends ReactiveAdapterOperations<
                     logger.warn("[findByEmailAndIdRequest] No se encontró solicitud para email {} y idRequest {}", email, idRequest);
                     return Mono.empty();
                 }));
+    }
+
+    @Override
+    public Mono<CreditApplication> borrowingCapacity(BigDecimal baseSalary) {
+        logger.trace("[borrowingCapacity] Calculando capacidad de endeudamiento para salario base: {}", baseSalary);
+        
+        if (baseSalary == null || baseSalary.compareTo(BigDecimal.ZERO) <= 0) {
+            logger.warn("[borrowingCapacity] Salario base inválido: {}. Retornando solicitud vacía", baseSalary);
+            return Mono.empty();
+        }
+        
+        // Calcular capacidad máxima de endeudamiento (35% del salario)
+        BigDecimal maxBorrowingCapacity = baseSalary.multiply(new BigDecimal("0.35"));
+        
+        logger.debug("[borrowingCapacity] Capacidad máxima calculada: {} (35% de {})", maxBorrowingCapacity, baseSalary);
+        
+        // Crear una solicitud temporal con la capacidad calculada
+        // Este método parece ser para consultar préstamos existentes basados en capacidad
+        // Por ahora retornamos una solicitud con información de capacidad
+        CreditApplication capacityResult = CreditApplication.builder()
+                .creditAmount(maxBorrowingCapacity)
+                .build();
+        
+        logger.info("[borrowingCapacity] Capacidad de endeudamiento calculada exitosamente: {}", maxBorrowingCapacity);
+        
+        return Mono.just(capacityResult)
+                .doOnSuccess(result -> logger.trace("[borrowingCapacity] Resultado de capacidad retornado: {}", result))
+                .doOnError(error -> logger.error("[borrowingCapacity] Error calculando capacidad de endeudamiento: {}", error.getMessage(), error));
+    }
+
+    @Override
+    public Mono<CreditApplication> findById(Integer idRequest) {
+        logger.trace("[findById] Buscando solicitud por ID: {}", idRequest);
+        
+        if (idRequest == null || idRequest <= 0) {
+            logger.warn("[findById] ID de solicitud inválido: {}", idRequest);
+            return Mono.empty();
+        }
+        
+        return super.repository.findById(idRequest)
+                .map(entity -> {
+                    logger.debug("[findById] Solicitud encontrada para ID: {}", idRequest);
+                    return mapper.map(entity, CreditApplication.class);
+                })
+                .switchIfEmpty(Mono.defer(() -> {
+                    logger.warn("[findById] No se encontró solicitud para ID: {}", idRequest);
+                    return Mono.empty();
+                }))
+                .doOnError(error -> logger.error("[findById] Error buscando solicitud por ID {}: {}", idRequest, error.getMessage(), error));
     }
 
     private Flux<CreditApplicationEnrichedDTO> getFilteredEnrichedDTO(String nameState, String nameLoan) {

@@ -24,6 +24,7 @@ import static org.springframework.web.reactive.function.server.RouterFunctions.r
 @Configuration
 @Tag(name = "Solicitudes", description = "Endpoints para la gestión de solicitudes de crédito")
 public class RouterRest {
+
     @Bean
     @RouterOperations({
             @RouterOperation(
@@ -88,12 +89,34 @@ public class RouterRest {
                                     @ApiResponse(responseCode = "500", description = "Error interno del servidor")
                             }
                     )
+            ),
+            @RouterOperation(
+                    path = "/api/v1/test-capacity",
+                    method = RequestMethod.GET,
+                    beanClass = Handler.class,
+                    beanMethod = "testCapacityCalculation",
+                    operation = @Operation(
+                            summary = "Prueba el cálculo de capacidad de endeudamiento",
+                            description = "Endpoint para probar el cálculo de deuda mensual actual y capacidad de endeudamiento usando el salario base del usuario.",
+                            operationId = "testCapacityCalculation",
+                            responses = {
+                                    @ApiResponse(responseCode = "200", description = "Cálculo exitoso",
+                                            content = @Content(schema = @Schema(implementation = String.class))
+                                    ),
+                                    @ApiResponse(responseCode = "400", description = "Email requerido",
+                                            content = @Content(schema = @Schema(implementation = String.class))
+                                    ),
+                                    @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+                            }
+                    )
             )
     })
     public RouterFunction<ServerResponse> routerFunction(Handler handler) {
         return route(POST("/api/v1/solicitud"), handler::saveRequestApi)
                 .andRoute(GET("/api/v1/solicitud"), handler::listRequest) //este es el endpoint para el listado de solicitudes
-                .andRoute(PUT("/api/v1/solicitud"), handler::updateState);
+                .andRoute(PUT("/api/v1/solicitud"), handler::updateState)
+                .andRoute(POST( "/api/v1/calcular-capacidad"), handler::BorrowingCapacity)
+                .andRoute(GET("/api/v1/test-capacity"), handler::testCapacityCalculation);
         // .andRoute(POST("/api/usecase/otherpath"), handler::listenPOSTUseCase)
     }
 }

@@ -8,6 +8,8 @@ spring:
   sql:
     init:
       mode: "always"
+      schema-locations: "classpath:database/schema.sql"
+      data-locations: "classpath:database/data.sql"
 adapters:
   r2dbc:
     host: "${ADAPTERS_R2DBC_HOST:localhost}"
@@ -35,21 +37,25 @@ auth:
     base-url: "http://localhost:8080"
 adapter:
   sqs:
-    region: us-east-2
-    queueUrl: https://sqs.us-east-2.amazonaws.com/155290702720/ColaNotificacionEmail
-    #queueUrl: https://sqs.us-east-2.amazonaws.com/155290702720/ColaNotificacionIndividual
-    # El endpoint es solo para entornos locales, no es necesario para AWS
-    # endpoint: http://localhost:4566
-
-# Configuración de OpenAPI/Swagger
+    region: "us-east-2"
+    queueUrl: "https://sqs.us-east-2.amazonaws.com/155290702720/ColaNotificacionEmail"
+    capacity-queue-url: "https://us-east-2.queue.amazonaws.com/155290702720/CapacidadEndeudamiento"
 springdoc:
   api-docs:
-    path: /v3/api-docs
+    path: "/v3/api-docs"
   swagger-ui:
-    path: /swagger-ui.html
-    operationsSorter: method
-    tagsSorter: alpha
+    path: "/swagger-ui.html"
+    operationsSorter: "method"
+    tagsSorter: "alpha"
   show-actuator: true
-
 logging.level:
-  co.com.projectve.sqs.sender: DEBUG
+  co.com.projectve.sqs.sender: "DEBUG"
+entrypoint:
+  sqs:
+    region: "us-east-2"
+    #endpoint: "http://localhost:4566"
+    queueUrl: "https://sqs.us-east-2.amazonaws.com/155290702720/CapacidadResultados"
+    waitTimeSeconds: 20
+    maxNumberOfMessages: 10
+    visibilityTimeoutSeconds: 30
+    numberOfThreads: 1

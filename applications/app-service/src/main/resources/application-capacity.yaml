@@ -1,0 +1,38 @@
+# Configuración para el módulo de Capacidad de Endeudamiento
+adapter:
+  sqs:
+    region: "us-east-2" # Región de AWS donde están las colas
+    queueUrl: "https://sqs.us-east-2.amazonaws.com/155290702720/ColaNotificacionEmail" # Cola para notificaciones (existente)
+    capacity-queue-url: "https://us-east-2.queue.amazonaws.com/155290702720/CapacidadEndeudamiento" # Cola estándar para solicitudes de capacidad
+    #endpoint: ${SQS_ENDPOINT:} # Solo para LocalStack para desarrollo local
+
+entrypoint:
+  sqs:
+    #region: "us-east-2" # Misma región que las colas
+    #queueUrl: "https://us-east-2.queue.amazonaws.com/155290702720/CapacidadResultados" # Cola estándar para resultados de capacidad
+    #waitTimeSeconds: 20
+    #maxNumberOfMessages: 10
+    #visibilityTimeoutSeconds: 30
+    #numberOfThreads: 1
+    #endpoint: ${SQS_ENDPOINT:} # Solo para LocalStack para desarrollo local
+
+# Configuración de logging específica para capacidad de endeudamiento
+logging:
+  level:
+    co.com.projectve.usecase.capacity: ${CAPACITY_LOG_LEVEL:DEBUG}
+    co.com.projectve.sqs.sender: ${SQS_SENDER_LOG_LEVEL:INFO}
+    co.com.projectve.sqs.listener: ${SQS_LISTENER_LOG_LEVEL:INFO}
+
+# Configuración de métricas para monitoreo
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    tags:
+      application: solicitudes
+      module: capacidad-endeudamiento

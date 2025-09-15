@@ -81,6 +81,20 @@ public class AuthClient {
                         (a, b) -> a
                 ));
     }
+
+    /**
+     * Busca un usuario específico por email del microservicio de autenticación.
+     * @param email El email del usuario a buscar.
+     * @return Mono que emite el UserInfoDTO del usuario encontrado o vacío si no existe.
+     */
+    public Mono<UserInfoDTO> findUserByEmail(String email) {
+        logger.debug("Buscando usuario por email: {}", email);
+        return listAllUsersFromContext()
+                .filter(user -> email != null && email.equalsIgnoreCase(user.getEmail()))
+                .next()
+                .doOnNext(user -> logger.debug("Usuario encontrado: {}", user.getEmail()))
+                .doOnError(e -> logger.error("Error buscando usuario por email {}: {}", email, e.getMessage()));
+    }
 }
 
 

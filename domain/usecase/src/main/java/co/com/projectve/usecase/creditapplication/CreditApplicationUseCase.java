@@ -4,6 +4,7 @@ package co.com.projectve.usecase.creditapplication;
 import co.com.projectve.model.creditapplication.CreditApplication;
 import co.com.projectve.model.creditapplication.gateways.CreditApplicationRepository;
 import co.com.projectve.model.creditapplication.gateways.NotificationService;
+import co.com.projectve.model.creditapplication.gateways.AutomaticValidationService;
 import co.com.projectve.usecase.creditapplication.exception.BusinessException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -16,6 +17,7 @@ import reactor.core.publisher.Mono;
 public class CreditApplicationUseCase {
     private final CreditApplicationRepository creditApplicationRepository;
     private final NotificationService notificationService;
+    private final AutomaticValidationService automaticValidationService;
     private static final Logger logger = LoggerFactory.getLogger(CreditApplicationUseCase.class);
 
     public Mono<CreditApplication> execute(CreditApplication creditApplication) {
@@ -33,6 +35,10 @@ public class CreditApplicationUseCase {
                     
                     logger.trace("Invocando repositorio para persistir la solicitud");
                     return creditApplicationRepository.saveRequest(validatedApp); // luego de validar guarda el requerimiento
+                })
+                .flatMap(savedApp -> {
+                    logger.trace("Solicitud guardada exitosamente. Procesando validación automática");
+                    return automaticValidationService.processAutomaticValidation(savedApp);
                 })
                 .doOnNext(savedApp -> {
                     logger.info("Solicitud de crédito procesada exitosamente. ID: {}, Estado: {}", 
@@ -93,5 +99,7 @@ public class CreditApplicationUseCase {
             default -> 1;
         };
     }
+
+
 
 }

@@ -1,0 +1,11 @@
+dependencies {
+    implementation project(':model')
+    implementation project(':usecase')
+    implementation project(':r2dbc-postgresql')
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+    implementation 'org.springframework.boot:spring-boot-autoconfigure'
+    implementation 'org.apache.logging.log4j:log4j-api'
+    implementation 'software.amazon.awssdk:sqs'
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310'
+}
