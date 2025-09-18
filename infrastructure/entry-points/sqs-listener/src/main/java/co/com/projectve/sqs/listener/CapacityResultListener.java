@@ -113,7 +113,7 @@ public class CapacityResultListener {
         return switch (stateId) {
             case 2 -> "Aprobado";
             case 3 -> "Rechazado";
-            case 4 -> "Revisión Manual";
+            case 4 -> "Revision Manual";
             default -> "Pendiente";
         };
     }

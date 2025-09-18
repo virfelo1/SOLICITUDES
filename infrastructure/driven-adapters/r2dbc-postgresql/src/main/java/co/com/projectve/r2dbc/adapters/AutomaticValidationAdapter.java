@@ -19,38 +19,38 @@ public class AutomaticValidationAdapter implements AutomaticValidationService {
     
     @Override
     public Mono<CreditApplication> processAutomaticValidation(CreditApplication creditApplication) {
-        log.trace("[processAutomaticValidation] Verificando validación automática para solicitud ID: {}", 
+        log.trace("[processAutomaticValidation] Verificando validacion automatica para solicitud ID: {}",
                  creditApplication.getIdRequest());
         
         return loanTypeRepository.findLoanTypeById(creditApplication.getIdLoanType())
                 .flatMap(loanType -> {
                     if (loanType.autoValidation() != null && loanType.autoValidation()) {
-                        log.info("Tipo de préstamo '{}' requiere validación automática. Iniciando proceso.", 
+                        log.info("Tipo de prestamo '{}' requiere validacion automatica. Iniciando proceso.",
                                 loanType.nameLoanType());
                         return triggerCapacityCalculation(creditApplication);
                     } else {
-                        log.debug("Tipo de préstamo '{}' no requiere validación automática. Continuando con estado pendiente.", 
+                        log.debug("Tipo de prestamo '{}' no requiere validacion automatica. Continuando con estado pendiente.",
                                 loanType.nameLoanType());
                         return Mono.just(creditApplication);
                     }
                 })
                 .switchIfEmpty(Mono.fromCallable(() -> {
-                    log.warn("No se encontró información del tipo de préstamo ID: {}. Continuando sin validación automática.", 
+                    log.warn("No se encontro informacion del tipo de prestamo ID: {}. Continuando sin validacion automatica.",
                             creditApplication.getIdLoanType());
                     return creditApplication;
                 }))
-                .doOnError(error -> log.error("Error verificando validación automática: {}", error.getMessage(), error));
+                .doOnError(error -> log.error("Error verificando validación automatica: {}", error.getMessage(), error));
     }
     
     private Mono<CreditApplication> triggerCapacityCalculation(CreditApplication creditApplication) {
-        log.trace("[triggerCapacityCalculation] Iniciando cálculo de capacidad para solicitud ID: {}", 
+        log.trace("[triggerCapacityCalculation] Iniciando calculo de capacidad para solicitud ID: {}",
                  creditApplication.getIdRequest());
         
         return enrichedCapacityCalculationService.enqueueEnrichedCapacityCalculation(creditApplication)
                 .thenReturn(creditApplication) // La solicitud se mantiene en estado "Pendiente" hasta recibir resultado
-                .doOnSuccess(result -> log.info("Solicitud ID: {} encolada para validación automática. Estado: Pendiente de cálculo", 
+                .doOnSuccess(result -> log.info("Solicitud ID: {} encolada para validacion automatica. Estado: Pendiente de calculo",
                            result.getIdRequest()))
-                .doOnError(error -> log.error("Error encolando validación automática para solicitud ID: {}: {}", 
+                .doOnError(error -> log.error("Error encolando validacion automatica para solicitud ID: {}: {}",
                            creditApplication.getIdRequest(), error.getMessage(), error))
                 .onErrorReturn(creditApplication); // En caso de error, mantener el estado original
     }

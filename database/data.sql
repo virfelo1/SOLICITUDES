@@ -5,7 +5,7 @@ INSERT INTO states (id_state, name_state, description) VALUES
 (1, 'Pendiente', 'Solicitud creada, pendiente de procesamiento'),
 (2, 'Aprobado', 'Solicitud aprobada por el sistema'),
 (3, 'Rechazado', 'Solicitud rechazada por el sistema'),
-(4, 'Revisión Manual', 'Solicitud requiere revisión manual'),
+(4, 'Revision Manual', 'Solicitud requiere revision manual'),
 (5, 'Cancelado', 'Solicitud cancelada por el usuario')
 ON CONFLICT (id_state) DO NOTHING;
 

@@ -7,6 +7,6 @@ public record CapacityCalculationResult(
     BigDecimal currentMonthlyDebt,      // Suma de cuotas actuales
     BigDecimal availableCapacity,       // Capacidad disponible
     BigDecimal newLoanPayment,          // Cuota del nuevo préstamo
-    String decision,                    // "APROBADO", "RECHAZADO", "REVISION_MANUAL"
+    String decision,                    // "Aprobado", "Rechazado", "Revision manual"
     String reason                       // Razón de la decisión
 ) {}

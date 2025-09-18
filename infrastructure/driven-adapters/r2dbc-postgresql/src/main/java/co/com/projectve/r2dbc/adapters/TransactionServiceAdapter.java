@@ -90,7 +90,7 @@ public class TransactionServiceAdapter implements TransactionService {
         return switch (state) {
             case "Aprobado" -> (short) 2;
             case "Rechazado" -> (short) 3;
-            case "Revisión Manual" -> (short) 4;
+            case "Revision Manual" -> (short) 4;
             default -> (short) 1;
         };
     }

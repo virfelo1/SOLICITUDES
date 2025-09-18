@@ -50,7 +50,7 @@ springdoc:
   show-actuator: true
 logging.level:
   co.com.projectve.sqs.sender: "DEBUG"
-  co.com.projectve.sqs.listener: "DEBUG"
+  #co.com.projectve.sqs.listener: "DEBUG"
 entrypoint:
   sqs:
     region: "us-east-2"
