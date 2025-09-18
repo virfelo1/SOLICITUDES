@@ -54,7 +54,6 @@ logging.level:
 entrypoint:
   sqs:
     region: "us-east-2"
-    #endpoint: "http://localhost:4566"
     queueUrl: "https://sqs.us-east-2.amazonaws.com/155290702720/CapacidadResultados"
     waitTimeSeconds: 20
     maxNumberOfMessages: 10

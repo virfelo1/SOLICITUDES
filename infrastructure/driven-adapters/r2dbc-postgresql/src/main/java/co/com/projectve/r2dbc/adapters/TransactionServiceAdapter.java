@@ -9,7 +9,6 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
 
 @Service
 @Slf4j
@@ -25,23 +24,16 @@ public class TransactionServiceAdapter implements TransactionService {
                  creditApplication.getIdRequest());
         
         short stateId = mapStateToId(newState);
-        LocalDateTime now = LocalDateTime.now();
         
         String sql = """
             UPDATE users_info 
-            SET id_state = :stateId, 
-                updated_at = :updatedAt,
-                state_history = state_history || :stateHistoryEntry
+            SET id_state = :stateId
             WHERE id_request = :idRequest
             """;
-        
-        String stateHistoryEntry = String.format("|%s:%s:%s", newState, stateId, now);
         
         return databaseClient
                 .sql(sql)
                 .bind("stateId", stateId)
-                .bind("updatedAt", now)
-                .bind("stateHistoryEntry", stateHistoryEntry)
                 .bind("idRequest", creditApplication.getIdRequest())
                 .fetch()
                 .rowsUpdated()
@@ -68,23 +60,15 @@ public class TransactionServiceAdapter implements TransactionService {
         // El estado ya viene actualizado en el CreditApplication desde la Lambda
         short stateId = creditApplication.getIdState();
         
-        LocalDateTime now = LocalDateTime.now();
-        
         String sql = """
             UPDATE users_info 
-            SET id_state = :stateId, 
-                updated_at = :updatedAt,
-                state_history = state_history || :stateHistoryEntry
+            SET id_state = :stateId
             WHERE id_request = :idRequest
             """;
-        
-        String stateHistoryEntry = String.format("|CAPACITY_EVAL:%s:%s:%s", capacityResult, stateId, now);
         
         return databaseClient
                 .sql(sql)
                 .bind("stateId", stateId)
-                .bind("updatedAt", now)
-                .bind("stateHistoryEntry", stateHistoryEntry)
                 .bind("idRequest", creditApplication.getIdRequest())
                 .fetch()
                 .rowsUpdated()

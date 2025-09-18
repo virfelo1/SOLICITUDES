@@ -22,6 +22,7 @@ import java.util.function.Function;
 @Configuration
 public class SQSConfig {
 
+    // ✅ REACTIVADO: SQSProcessor ahora delega a CapacityResultProcessor
     @Bean
     public SQSListener sqsListener(SqsAsyncClient client, SQSProperties properties, Function<Message, Mono<Void>> fn) {
         return SQSListener.builder()

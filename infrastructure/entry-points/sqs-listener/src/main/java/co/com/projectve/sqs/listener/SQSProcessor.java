@@ -10,12 +10,12 @@ import java.util.function.Function;
 @Service
 @RequiredArgsConstructor
 public class SQSProcessor implements Function<Message, Mono<Void>> {
-    // private final MyUseCase myUseCase;
+    
+    private final CapacityResultProcessor capacityResultProcessor;
 
     @Override
     public Mono<Void> apply(Message message) {
-        System.out.println(message.body());
-        return Mono.empty();
-        // return myUseCase.doAny(message.body());
+        // ✅ DELEGAMOS al CapacityResultProcessor que tiene todos los logs
+        return capacityResultProcessor.processMessage(message);
     }
 }
