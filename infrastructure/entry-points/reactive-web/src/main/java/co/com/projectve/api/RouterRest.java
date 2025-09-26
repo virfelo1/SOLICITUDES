@@ -18,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.ServerResponse;
 
+import java.util.Map;
+
 import static org.springframework.web.reactive.function.server.RequestPredicates.*;
 import static org.springframework.web.reactive.function.server.RouterFunctions.route;
 
@@ -105,6 +107,30 @@ public class RouterRest {
                                     ),
                                     @ApiResponse(responseCode = "400", description = "Email requerido",
                                             content = @Content(schema = @Schema(implementation = String.class))
+                                    ),
+                                    @ApiResponse(responseCode = "500", description = "Error interno del servidor")
+                            }
+                    )
+            ),
+
+            @RouterOperation(
+                    path = "/api/v1/calcular-capacidad",
+                    method = RequestMethod.POST,
+                    beanClass = Handler.class,
+                    beanMethod = "BorrowingCapacity",
+                    operation = @Operation(
+                            summary = "Calcula la capacidad de endeudamiento",
+                            description = "Encola una solicitud para evaluación de capacidad de endeudamiento por Lambda externa.",
+                            operationId = "BorrowingCapacity",
+                            requestBody = @RequestBody(
+                                    content = @Content(schema = @Schema(implementation = CreditApplicationDTO.class))
+                            ),
+                            responses = {
+                                    @ApiResponse(responseCode = "200", description = "Solicitud encolada exitosamente",
+                                            content = @Content(schema = @Schema(implementation = Map.class, example = "{\"message\":\"Solicitud encolada exitosamente\"}"))
+                                    ),
+                                    @ApiResponse(responseCode = "400", description = "Error de validación en los datos de entrada",
+                                            content = @Content(schema = @Schema(implementation = Map.class, example = "{\"error\":\"El tipo de documento es obligatorio.\"}"))
                                     ),
                                     @ApiResponse(responseCode = "500", description = "Error interno del servidor")
                             }
