@@ -85,7 +85,7 @@ public class CapacityResultProcessor {
                 .switchIfEmpty(Mono.error(new RuntimeException("Solicitud no encontrada: " + idRequest)))
                 .doOnNext(found -> {
                     // ✅ LOG 4: Solicitud encontrada en BD
-                    log.info("🔍 [BD-FOUND] Solicitud encontrada - ID: {}, Estado actual: {}, Email: {}", 
+                    log.info("[BD-FOUND] Solicitud encontrada - ID: {}, Estado actual: {}, Email: {}", 
                              found.getIdRequest(), found.getIdState(), found.getEmail());
                 })
                 .flatMap(creditApplication -> {
@@ -106,7 +106,7 @@ public class CapacityResultProcessor {
                 })
                 .doOnError(error -> {
                     // ✅ LOG 7: Error en actualización
-                    log.error("❌ [BD-ERROR] Error actualizando solicitud {}: {}", idRequest, error.getMessage(), error);
+                    log.error("[BD-ERROR] Error actualizando solicitud {}: {}", idRequest, error.getMessage(), error);
                     log.error("Error actualizando solicitud con resultado de capacidad: {}", error.getMessage(), error);
                 });
     }

@@ -8,7 +8,7 @@ buildscript {
         lombokVersion = '1.18.38'
         mapstructVersion = '1.6.3'
         lombokMapstructBindingVersion = '0.2.0'
-        swaggerVersion = '2.3.0'
+        swaggerVersion = '2.8.9'
 	}
 }
 
